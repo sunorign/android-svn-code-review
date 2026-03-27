@@ -8,14 +8,14 @@ from .base_reporter import BaseReporter
 
 
 class TextReporter(BaseReporter):
-    """Generate plain text format report for code review results."""
+    """生成代码审查结果的纯文本格式报告。"""
 
     def generate_report(self,
                        local_findings: List[RuleFinding],
                        ai_findings: List[AIReviewFinding],
                        meta: Dict[str, Any],
                        libs_reminder: str = "") -> str:
-        """Generate text report content."""
+        """生成文本报告内容。"""
         timestamp = meta.get('timestamp', datetime.datetime.now().isoformat())
         mode = meta.get('mode', 'unknown')
         file_count = meta.get('file_count', 0)
@@ -36,7 +36,7 @@ class TextReporter(BaseReporter):
         report.append("=" * 80)
         report.append("")
 
-        # Group findings by file
+        # 按文件分组发现的问题
         local_by_file = defaultdict(list)
         for finding in local_findings:
             local_by_file[finding.file_path].append(finding)
@@ -45,7 +45,7 @@ class TextReporter(BaseReporter):
         for finding in ai_findings:
             ai_by_file[finding.file_path].append(finding)
 
-        # Local findings section
+        # 本地规则发现部分
         if local_findings:
             report.append(f"LOCAL RULE FINDINGS: {len(local_findings)} issues")
             report.append("-" * 80)
@@ -65,7 +65,7 @@ class TextReporter(BaseReporter):
                             report.append(f"         {line}")
             report.append("")
 
-        # AI findings section
+        # AI审查发现部分
         if ai_findings:
             report.append(f"AI REVIEW FINDINGS: {len(ai_findings)} issues")
             report.append("-" * 80)
@@ -83,7 +83,7 @@ class TextReporter(BaseReporter):
                         report.append(f"       Suggestion: {finding.suggestion}")
             report.append("")
 
-        # Summary
+        # 总结
         total_issues = len(local_findings) + len(ai_findings)
         report.append(f"\n{'=' * 80}")
         report.append(f"SUMMARY: Total issues found - {total_issues}")
@@ -94,5 +94,5 @@ class TextReporter(BaseReporter):
         return "\n".join(report)
 
     def _get_file_extension(self) -> str:
-        """Get file extension for text report."""
+        """获取文本报告的文件扩展名。"""
         return "txt"
