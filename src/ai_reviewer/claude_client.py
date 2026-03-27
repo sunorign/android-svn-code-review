@@ -94,7 +94,7 @@ class ClaudeClient(BaseAIClient):
                 )
 
         except Exception as e:
-            review_type_str = "diff" if review_type == "diff" else "full_file"
+            review_type_str = "diff" if review_type == "diff" else "file"
             return AIReviewResult(
                 success=False,
                 findings=[],
@@ -155,23 +155,23 @@ class ClaudeClient(BaseAIClient):
                     except Exception as e:
                         return {
                             "success": False,
-                            "error": f"解析JSON响应失败: {str(e)}, 原始响应: {text_response}"
+                            "error": f"Failed to parse JSON response: {str(e)}, Raw response: {text_response}"
                         }
                 else:
                     return {
                         "success": False,
-                        "error": "API响应中没有内容"
+                        "error": "No content in API response"
                     }
             else:
                 return {
                     "success": False,
-                    "error": f"API调用失败，状态码: {response.status_code}: {response.text}"
+                    "error": f"API call failed with status {response.status_code}: {response.text}"
                 }
 
         except Exception as e:
             return {
                 "success": False,
-                "error": f"API请求失败: {str(e)}"
+                "error": f"API request failed: {str(e)}"
             }
 
     def _parse_findings(self, data: dict, file_path: str) -> List[AIReviewFinding]:
