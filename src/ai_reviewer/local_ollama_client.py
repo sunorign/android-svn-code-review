@@ -4,14 +4,14 @@ from src.config import Config
 
 
 class LocalOllamaClient(BaseAIClient):
-    """Ollama API client implementation for AI review."""
+    """用于AI代码审查的Ollama API客户端实现。"""
 
     def __init__(self, config: Config):
         """
-        Initialize the Ollama API client.
+        初始化Ollama API客户端。
 
-        Args:
-            config: Configuration object containing Ollama API configuration
+        参数:
+            config: 包含Ollama API配置的配置对象
         """
         self.config = config
         self.api_base = config.ollama_api_base or "http://localhost:11434"
@@ -21,28 +21,28 @@ class LocalOllamaClient(BaseAIClient):
 
     def review_diff(self, file_path: str, diff_content: str, prompt_template: str) -> AIReviewResult:
         """
-        Review a diff chunk using Ollama API.
+        使用Ollama API审查代码差异块。
 
-        Args:
-            file_path: Path to the file being reviewed
-            diff_content: Diff content to review
-            prompt_template: Prompt template with placeholders
+        参数:
+            file_path: 正在审查的文件路径
+            diff_content: 要审查的代码差异内容
+            prompt_template: 带占位符的提示词模板
 
-        Returns:
-            AIReviewResult containing findings or error
+        返回:
+            包含审查结果或错误信息的AIReviewResult对象
         """
         raise NotImplementedError("Ollama diff review implementation not complete")
 
     def review_full_file(self, file_path: str, content: str, prompt_template: str) -> AIReviewResult:
         """
-        Review a full file using Ollama API.
+        使用Ollama API审查整个文件内容。
 
-        Args:
-            file_path: Path to the file being reviewed
-            content: Full file content to review
-            prompt_template: Prompt template with placeholders
+        参数:
+            file_path: 正在审查的文件路径
+            content: 要审查的完整文件内容
+            prompt_template: 带占位符的提示词模板
 
-        Returns:
-            AIReviewResult containing findings or error
+        返回:
+            包含审查结果或错误信息的AIReviewResult对象
         """
         raise NotImplementedError("Ollama full file review implementation not complete")
