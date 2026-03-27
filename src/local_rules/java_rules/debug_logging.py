@@ -14,7 +14,7 @@ DEBUG_LOG_PATTERNS = [
 
 
 class DebugLoggingRule(BaseRule):
-    """Check for debug logging statements that shouldn't be committed."""
+    """检查不应提交的调试日志语句。"""
 
     @property
     def name(self) -> str:
@@ -23,7 +23,6 @@ class DebugLoggingRule(BaseRule):
     @property
     def description(self) -> str:
         return "Detects debug logging statements (System.out.println, Log.d) that should be removed before commit"
-
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -59,7 +58,7 @@ class DebugLoggingRule(BaseRule):
             line_stripped = line.strip()
             current_line = line
 
-            # Handle multi-line comments
+            # 处理多行注释
             if in_multiline_comment:
                 if '*/' in current_line:
                     in_multiline_comment = False
