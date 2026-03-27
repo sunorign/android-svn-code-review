@@ -8,8 +8,8 @@ class AIReviewFinding:
     file_path: str
     line_start: int
     line_end: int
-    issue_type: str  # "BUG", "PERFORMANCE", "STYLE", "SECURITY"
-    severity: str  # "BLOCK", "WARNING"
+    issue_type: str  # "缺陷", "性能", "风格", "安全"
+    severity: str  # "阻断", "警告"
     message: str
     suggestion: Optional[str] = None
 
