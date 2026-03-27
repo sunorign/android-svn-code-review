@@ -31,39 +31,39 @@ class ScanResult:
 
 
 class FileScanner:
-    """Determine if a file should be checked based on path rules."""
+    """根据路径规则判断是否应检查文件。"""
 
     def __init__(self, ignore_patterns: List[str] = None):
         self.ignore_patterns = ignore_patterns or DEFAULT_IGNORE_PATTERNS
 
     def should_check_file(self, file_path: str) -> ScanResult:
-        """Check if this file should be reviewed."""
+        """检查此文件是否应被审查。"""
 
-        # Check for libs changes first
+        # 首先检查libs目录变更
         for pattern in LIBS_PATTERNS:
             if self._match_pattern(file_path, pattern):
                 return ScanResult(
                     should_ignore=True,
                     is_libs_change=True,
-                    reason="File in libs/ directory - will not review, requires commit message note"
+                    reason="文件在libs/目录中 - 不会进行审查，需要在提交信息中注明"
                 )
 
-        # Check ignore patterns
+        # 检查忽略模式
         for pattern in self.ignore_patterns:
             if self._match_pattern(file_path, pattern):
                 return ScanResult(
                     should_ignore=True,
                     is_libs_change=False,
-                    reason=f"Matched ignore pattern: {pattern}"
+                    reason=f"匹配到忽略模式: {pattern}"
                 )
 
-        # Check file extension
+        # 检查文件扩展名
         ext = self._get_extension(file_path)
         if ext not in ALLOWED_EXTENSIONS:
             return ScanResult(
                 should_ignore=True,
                 is_libs_change=False,
-                reason=f"File type {ext} not supported for review"
+                reason=f"文件类型{ext}不支持审查"
             )
 
         return ScanResult(
@@ -72,22 +72,22 @@ class FileScanner:
         )
 
     def should_check_extension(self, file_path: str) -> bool:
-        """Check if file extension is supported for code review."""
+        """检查文件扩展名是否支持代码审查。"""
         ext = self._get_extension(file_path)
         return ext in ALLOWED_EXTENSIONS
 
     def _match_pattern(self, file_path: str, pattern: str) -> bool:
-        """Simple pattern matching - supports trailing slash for directories."""
-        # Convert unix-style path to match any separator
+        """简单模式匹配 - 支持目录结尾的斜杠。"""
+        # 将Unix风格路径转换为兼容任意分隔符
         path = file_path.replace('\\', '/')
 
         if pattern.endswith('/'):
-            # Directory pattern: match any file under this directory
+            # 目录模式: 匹配此目录下的任何文件
             return f"/{pattern}".strip('/') in f"/{path}".strip('/') or path.startswith(pattern.strip('/'))
         return pattern in path
 
     def scan(self, file_diffs: List) -> dict:
-        """Scan and filter file diffs, collect libs notifications."""
+        """扫描并过滤文件差异，收集libs目录变更通知。"""
         file_diffs_to_check = []
         libs_notifications = []
 
@@ -113,7 +113,7 @@ class FileScanner:
         }
 
     def _get_extension(self, file_path: str) -> str:
-        """Get lowercase file extension including dot."""
+        """获取小写的文件扩展名（包含点号）。"""
         parts = file_path.split('.')
         if len(parts) > 1:
             return f'.{parts[-1].lower()}'
