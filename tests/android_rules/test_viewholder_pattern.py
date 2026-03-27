@@ -10,7 +10,7 @@ def test_finds_findviewbyid_in_getview():
 
     assert len(findings) == 1
     assert findings[0].severity == "WARNING"
-    assert "findViewById call detected" in findings[0].message
+    assert "检测到 findViewById 调用" in findings[0].message
 
 
 def test_finds_findviewbyid_in_onbindviewholder():
@@ -21,7 +21,7 @@ def test_finds_findviewbyid_in_onbindviewholder():
 
     assert len(findings) == 1
     assert findings[0].severity == "WARNING"
-    assert "findViewById call detected" in findings[0].message
+    assert "检测到 findViewById 调用" in findings[0].message
 
 
 def test_ignores_findviewbyid_in_non_adapter():
@@ -88,4 +88,4 @@ def test_check_full_file_in_onbindviewholder():
     # 只有 onBindViewHolder 中的 findViewById 会被标记
     assert len(findings) == 1
     assert findings[0].severity == "WARNING"
-    assert "findViewById call in getView()/onBindViewHolder()" in findings[0].message
+    assert "在 getView()/onBindViewHolder() 中调用 findViewById" in findings[0].message

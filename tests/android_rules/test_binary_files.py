@@ -10,7 +10,7 @@ def test_finds_apk_file():
 
     assert len(findings) == 1
     assert findings[0].severity == "BLOCK"
-    assert "Binary file" in findings[0].message
+    assert "二进制文件" in findings[0].message
 
 
 def test_finds_dex_file():
@@ -21,7 +21,7 @@ def test_finds_dex_file():
 
     assert len(findings) == 1
     assert findings[0].severity == "BLOCK"
-    assert "Binary file" in findings[0].message
+    assert "二进制文件" in findings[0].message
 
 
 def test_finds_jar_file():
@@ -32,7 +32,7 @@ def test_finds_jar_file():
 
     assert len(findings) == 1
     assert findings[0].severity == "BLOCK"
-    assert "Binary file" in findings[0].message
+    assert "二进制文件" in findings[0].message
 
 
 def test_finds_binary_content():
@@ -44,7 +44,7 @@ def test_finds_binary_content():
 
     assert len(findings) == 1
     assert findings[0].severity == "BLOCK"
-    assert "Binary file" in findings[0].message
+    assert "二进制文件" in findings[0].message
 
 
 def test_check_full_file_apk():
