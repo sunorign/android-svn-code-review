@@ -18,9 +18,9 @@ HARDCODED_URL_PATTERN = re.compile(
 
 
 class HardcodedUrlsRule(BaseRule):
-    """Check for hardcoded URLs/IP addresses in code.
+    """检查代码中的硬编码URL/IP地址。
 
-    URLs/IP addresses should be placed in configuration files instead of being hardcoded.
+    URL/IP地址应放在配置文件中，而不是硬编码在代码中。
     """
 
     @property
@@ -29,7 +29,7 @@ class HardcodedUrlsRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects hardcoded URLs or IP addresses that should be in configuration files"
+        return "检测应放在配置文件中的硬编码URL或IP地址"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -46,7 +46,7 @@ class HardcodedUrlsRule(BaseRule):
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"Found hardcoded URL/IP: `{match.group()}` - should be placed in configuration file",
+                    message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
                     severity="WARNING",
                     code_snippet=content
                 ))
@@ -62,7 +62,7 @@ class HardcodedUrlsRule(BaseRule):
             line_stripped = line.strip()
             current_line = line
 
-            # Handle multi-line comments
+            # 处理多行注释
             if in_multiline_comment:
                 if '*/' in current_line:
                     in_multiline_comment = False
@@ -89,7 +89,7 @@ class HardcodedUrlsRule(BaseRule):
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"Found hardcoded URL/IP: `{match.group()}` - should be placed in configuration file",
+                        message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
                         severity="WARNING",
                         code_snippet=line_stripped
                     ))
