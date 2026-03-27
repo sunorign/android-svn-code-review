@@ -10,11 +10,11 @@ from .base_reporter import BaseReporter
 
 
 class HTMLReporter(BaseReporter):
-    """Generate HTML format report for code review results."""
+    """生成代码审查结果的HTML格式报告。"""
 
     @staticmethod
     def _sanitize_html_id(text: str) -> str:
-        """Sanitize text to be used as HTML id, replace all non-alphanumeric characters with underscores."""
+        """清理文本以用作HTML ID，将所有非字母数字字符替换为下划线。"""
         return re.sub(r'[^a-zA-Z0-9]', '_', text)
 
     def generate_report(self,
@@ -22,7 +22,7 @@ class HTMLReporter(BaseReporter):
                        ai_findings: List[AIReviewFinding],
                        meta: Dict[str, Any],
                        libs_reminder: str = "") -> str:
-        """Generate HTML report content."""
+        """生成HTML报告内容。"""
         timestamp = meta.get('timestamp', datetime.datetime.now().isoformat())
         mode = meta.get('mode', 'unknown')
         file_count = meta.get('file_count', 0)
@@ -93,7 +93,7 @@ class HTMLReporter(BaseReporter):
             output.append(f"            <div class=\"info-item\"><span class=\"info-label\">Library reminder:</span>{html.escape(libs_reminder)}</div>")
         output.append("        </div>")
 
-        # Local findings section
+        # 本地审查结果部分
         if local_findings:
             output.append("        <div class=\"section\">")
             output.append(f"            <h2>Local Rule Findings: {len(local_findings)} issues</h2>")
@@ -134,7 +134,7 @@ class HTMLReporter(BaseReporter):
                 output.append(f"            </div>")
             output.append("        </div>")
 
-        # AI findings section
+        # AI审查结果部分
         if ai_findings:
             output.append("        <div class=\"section\">")
             output.append(f"            <h2>AI Review Findings: {len(ai_findings)} issues</h2>")
@@ -175,7 +175,7 @@ class HTMLReporter(BaseReporter):
                 output.append(f"            </div>")
             output.append("        </div>")
 
-        # Summary section
+        # 总结部分
         output.append("        <div class=\"summary\">")
         output.append("            <h3>Summary</h3>")
         output.append("            <div class=\"summary-stats\">")
@@ -201,5 +201,5 @@ class HTMLReporter(BaseReporter):
         return "\n".join(output)
 
     def _get_file_extension(self) -> str:
-        """Get file extension for HTML report."""
+        """获取HTML报告的文件扩展名。"""
         return "html"
