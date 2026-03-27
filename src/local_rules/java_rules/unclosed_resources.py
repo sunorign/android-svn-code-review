@@ -6,7 +6,7 @@ from src.diff_parser import DiffChange, FileDiff
 
 
 class UnclosedResourcesRule(BaseRule):
-    """Check for unclosed resources like Cursor, Stream, Connection, FileInputStream etc."""
+    """检查未关闭的资源，如 Cursor、Stream、Connection、FileInputStream 等。"""
 
     RESOURCE_PATTERNS = [
         (re.compile(r'new\s+Cursor\s*\('), 'Cursor'),
@@ -23,7 +23,7 @@ class UnclosedResourcesRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects unclosed resources like Cursor, Stream, Connection, FileInputStream that should be properly closed"
+        return "检测未关闭的资源，如 Cursor、Stream、Connection、FileInputStream，这些资源应该被正确关闭"
 
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
@@ -44,7 +44,7 @@ class UnclosedResourcesRule(BaseRule):
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"Found unclosed resource `{resource_type}` - should be properly closed",
+                    message=f"发现未关闭的资源 `{resource_type}` - 应该被正确关闭",
                     severity="WARNING",
                     code_snippet=content
                 ))
@@ -89,7 +89,7 @@ class UnclosedResourcesRule(BaseRule):
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"Found unclosed resource `{resource_type}` - should be properly closed",
+                        message=f"发现未关闭的资源 `{resource_type}` - 应该被正确关闭",
                         severity="WARNING",
                         code_snippet=line_stripped
                     ))
