@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "timestamp": "2026-03-27T12:07:19.720448",
+    "mode": "diff-only",
+    "file_count": 1,
+    "has_block_issues": true
+  },
+  "local_findings": [
+    {
+      "file_path": "src/test.java",
+      "line_number": 2,
+      "rule_name": "MockBlockingRule",
+      "message": "Found debug logging",
+      "severity": "BLOCK",
+      "code_snippet": null
+    }
+  ],
+  "ai_findings": [],
+  "libs_reminder": ""
+}

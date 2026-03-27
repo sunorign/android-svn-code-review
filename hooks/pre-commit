@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Android SVN Code Review pre-commit hook
+# Call Python main
+
+# Get the repository root and transaction
+REPOS="$1"
+TXN="$2"
+
+# Run the code review tool
+python "$(dirname "$0")/../../src/main.py"
+
+exit $?
