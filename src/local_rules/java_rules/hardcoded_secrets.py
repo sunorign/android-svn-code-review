@@ -14,7 +14,7 @@ SECRET_PATTERNS = [
 
 
 class HardcodedSecretsRule(BaseRule):
-    """Check for hardcoded secrets/passwords/API keys in code."""
+    """检查代码中硬编码的密钥/密码/API密钥。"""
 
     @property
     def name(self) -> str:
@@ -22,7 +22,7 @@ class HardcodedSecretsRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects hardcoded secrets, passwords, and API keys that should not be in source code"
+        return "检测硬编码的密钥、密码和API密钥，这些内容不应出现在源代码中"
 
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
@@ -37,18 +37,18 @@ class HardcodedSecretsRule(BaseRule):
 
     def _check_line(self, file_path: str, line_number: int, content: str) -> List[RuleFinding]:
         findings = []
-        # Remove comments to avoid matching in them
+        # 移除注释以避免在注释中匹配到内容
         content_without_comments = self._remove_comments(content)
         for pattern in SECRET_PATTERNS:
             match = pattern.search(content_without_comments)
             if match:
-                # Check if the match is not inside a string literal
+                # 检查匹配结果是否不在字符串字面量中
                 if not self._is_pattern_in_string(content_without_comments, match.start(), match.end()):
                     findings.append(RuleFinding(
                         file_path=file_path,
                         line_number=line_number,
                         rule_name=self.name,
-                        message="Found potential hardcoded secret/password/api key. Secrets should be in configuration, not in source code.",
+                        message="发现潜在的硬编码密钥/密码/API密钥。密钥应放在配置文件中，而不是源代码里。",
                         severity="BLOCK",
                         code_snippet=content.strip()
                     ))
