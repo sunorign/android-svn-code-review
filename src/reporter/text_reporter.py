@@ -1,26 +1,32 @@
 import datetime
 from typing import List, Dict, Any
-from collections import defaultdict
-
-from src.local_rules.base_rule import RuleFinding
-from src.ai_reviewer.base_client import AIReviewFinding
+from src.reporter.unified_finding import UnifiedFinding
+from src.reporter.unified_finding_processor import UnifiedFindingProcessor
 from .base_reporter import BaseReporter
 
 
 class TextReporter(BaseReporter):
-    """生成代码审查结果的纯文本格式报告。"""
+    """生成代码审查结果的 Markdown 表格格式文本报告。"""
+
+    def __init__(self):
+        super().__init__()
+        self.processor = UnifiedFindingProcessor()
 
     def generate_report(self,
-                       local_findings: List[RuleFinding],
-                       ai_findings: List[AIReviewFinding],
+                       local_findings: List[Any],
+                       ai_findings: List[Any],
                        meta: Dict[str, Any],
                        libs_reminder: str = "") -> str:
-        """生成文本报告内容。"""
+        """生成 Markdown 格式报告内容。"""
         timestamp = meta.get('timestamp', datetime.datetime.now().isoformat())
         mode = meta.get('mode', 'unknown')
         file_count = meta.get('file_count', 0)
-        has_blocking = meta.get('has_blocking', False)
         libs_change = meta.get('libs_change', False)
+
+        # 处理所有发现为统一格式
+        all_findings = local_findings + ai_findings
+        findings = self.processor.process_all(all_findings)
+        has_blocking = any(finding.priority == "严重" for finding in findings)
 
         report = []
         report.append("=" * 80)
@@ -36,59 +42,31 @@ class TextReporter(BaseReporter):
         report.append("=" * 80)
         report.append("")
 
-        # 按文件分组发现的问题
-        local_by_file = defaultdict(list)
-        for finding in local_findings:
-            local_by_file[finding.file_path].append(finding)
-
-        ai_by_file = defaultdict(list)
-        for finding in ai_findings:
-            ai_by_file[finding.file_path].append(finding)
-
-        # 本地规则发现部分
-        if local_findings:
-            report.append(f"LOCAL RULE FINDINGS: {len(local_findings)} issues")
+        # 表格标题
+        if findings:
+            report.append(f"FINDINGS: {len(findings)} issues")
             report.append("-" * 80)
 
-            for file_path, findings in local_by_file.items():
-                report.append(f"\nFile: {file_path}")
-                report.append(f"  Found {len(findings)} issues:")
+            # 表格头部
+            report.append("| 优先级 | 问题类型 | 位置 | 说明 | 修复建议 |")
+            report.append("|--------|---------|------|------|----------|")
 
-                for i, finding in enumerate(findings, 1):
-                    severity_tag = f"[BLOCK]" if finding.severity.upper() == "BLOCK" else "[WARNING]"
-                    report.append(f"    {i}. {severity_tag} {finding.rule_name}")
-                    report.append(f"       Line {finding.line_number}: {finding.message}")
+            # 表格内容
+            for finding in findings:
+                # 转义表格内容中的 | 字符
+                description = finding.description.replace("|", "\\|")
+                suggestion = finding.suggestion.replace("|", "\\|") if finding.suggestion else ""
 
-                    if finding.code_snippet:
-                        report.append(f"       Code snippet:")
-                        for line in finding.code_snippet.split('\n'):
-                            report.append(f"         {line}")
-            report.append("")
+                report.append(f"| {finding.priority} | {finding.issue_type} | {finding.location} | {description} | {suggestion} |")
 
-        # AI审查发现部分
-        if ai_findings:
-            report.append(f"AI REVIEW FINDINGS: {len(ai_findings)} issues")
-            report.append("-" * 80)
-
-            for file_path, findings in ai_by_file.items():
-                report.append(f"\nFile: {file_path}")
-                report.append(f"  Found {len(findings)} issues:")
-
-                for i, finding in enumerate(findings, 1):
-                    severity_tag = f"[BLOCK]" if finding.severity.upper() == "BLOCK" else "[WARNING]"
-                    report.append(f"    {i}. {severity_tag} {finding.issue_type}")
-                    report.append(f"       Lines {finding.line_start}-{finding.line_end}: {finding.message}")
-
-                    if finding.suggestion:
-                        report.append(f"       Suggestion: {finding.suggestion}")
             report.append("")
 
         # 总结
-        total_issues = len(local_findings) + len(ai_findings)
         report.append(f"\n{'=' * 80}")
-        report.append(f"SUMMARY: Total issues found - {total_issues}")
-        report.append(f"  - Local rules: {len(local_findings)}")
-        report.append(f"  - AI review: {len(ai_findings)}")
+        report.append(f"SUMMARY: Total issues found - {len(findings)}")
+        report.append(f"  - 严重: {sum(1 for f in findings if f.priority == '严重')}")
+        report.append(f"  - 一般: {sum(1 for f in findings if f.priority == '一般')}")
+        report.append(f"  - 轻微: {sum(1 for f in findings if f.priority == '轻微')}")
         report.append(f"{'=' * 80}")
 
         return "\n".join(report)
