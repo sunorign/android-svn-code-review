@@ -9,9 +9,9 @@ BINARY_EXTENSIONS = ['.apk', '.dex', '.jar']
 
 
 class BinaryFilesRule(BaseRule):
-    """Check for forbidden binary files that should not be committed.
+    """检查不应提交的禁止性二进制文件。
 
-    Binary files like APK, DEX, JAR should be managed by package managers.
+    APK、DEX、JAR等二进制文件应通过包管理器进行管理。
     """
 
     @property
@@ -20,10 +20,10 @@ class BinaryFilesRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects forbidden binary files (APK, DEX, JAR) that should not be committed"
+        return "检测不应提交的禁止性二进制文件（APK、DEX、JAR）"
 
     def _is_binary_file(self, file_path: str, content: str) -> bool:
-        """Check if the file is a binary file based on extension or content."""
+        """基于扩展名或内容检查文件是否为二进制文件。"""
         # 检查文件扩展名
         for ext in BINARY_EXTENSIONS:
             if file_path.lower().endswith(ext):
@@ -65,7 +65,7 @@ class BinaryFilesRule(BaseRule):
                 file_path=file_diff.file_path,
                 line_number=change.line_number,
                 rule_name=self.name,
-                message=f"Binary file `{file_diff.file_path}` should not be committed - use package manager instead",
+                message=f"二进制文件 `{file_diff.file_path}` 不应提交 - 请使用包管理器代替",
                 severity="BLOCK",
                 code_snippet=change.content.strip()
             ))
@@ -80,9 +80,9 @@ class BinaryFilesRule(BaseRule):
                 file_path=file_path,
                 line_number=1,
                 rule_name=self.name,
-                message=f"Binary file `{file_path}` should not be committed - use package manager instead",
+                message=f"二进制文件 `{file_path}` 不应提交 - 请使用包管理器代替",
                 severity="BLOCK",
-                code_snippet="Binary file content not shown"
+                code_snippet="二进制文件内容未显示"
             ))
 
         return findings
