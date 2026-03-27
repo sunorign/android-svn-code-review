@@ -203,7 +203,23 @@ def generate_reports(findings, meta, config):
     report_paths = []
     for reporter in reporters:
         try:
-            report_path = reporter.generate(findings, meta, config)
+            # 分离本地规则发现和AI发现（保持向后兼容）
+            local_findings = []
+            ai_findings = []
+
+            from src.local_rules.base_rule import RuleFinding
+            from src.ai_reviewer.base_client import AIReviewFinding
+
+            for finding in findings:
+                if isinstance(finding, RuleFinding):
+                    local_findings.append(finding)
+                elif isinstance(finding, AIReviewFinding):
+                    ai_findings.append(finding)
+                else:
+                    # 对于其他类型的发现，统一视为本地发现
+                    local_findings.append(finding)
+
+            report_path = reporter.generate(local_findings, ai_findings, meta, config)
             report_paths.append(report_path)
         except Exception as e:
             logger.error(f"使用 {reporter.__class__.__name__} 生成报告时出错: {e}")
