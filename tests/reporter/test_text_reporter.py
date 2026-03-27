@@ -22,8 +22,7 @@ def test_text_reporter_generation():
         )
     ]
 
-    # 模拟本地和AI发现（使用统一格式直接传递）
-    report = reporter.generate_report(findings, [], {})
+    report = reporter.generate_report(findings, {})
 
     assert "内存泄露" in report
     assert "MainActivity.java:120" in report
@@ -33,7 +32,7 @@ def test_text_reporter_generation():
 
 def test_text_reporter_headers():
     reporter = TextReporter()
-    report = reporter.generate_report([], [], {})
+    report = reporter.generate_report([], {})
 
     assert "CODE REVIEW REPORT" in report
     assert "Generated:" in report
@@ -49,7 +48,7 @@ def test_text_reporter_summary():
         UnifiedFinding(priority="轻微", issue_type="d", location="", description="", suggestion="")
     ]
 
-    report = reporter.generate_report(findings, [], {})
+    report = reporter.generate_report(findings, {})
 
     assert "SUMMARY: Total issues found - 4" in report
     assert "严重: 1" in report

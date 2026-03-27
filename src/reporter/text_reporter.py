@@ -1,32 +1,22 @@
 import datetime
 from typing import List, Dict, Any
 from src.reporter.unified_finding import UnifiedFinding
-from src.reporter.unified_finding_processor import UnifiedFindingProcessor
 from .base_reporter import BaseReporter
 
 
 class TextReporter(BaseReporter):
     """生成代码审查结果的 Markdown 表格格式文本报告。"""
 
-    def __init__(self):
-        super().__init__()
-        self.processor = UnifiedFindingProcessor()
-
     def generate_report(self,
-                       local_findings: List[Any],
-                       ai_findings: List[Any],
+                       findings: List[UnifiedFinding],
                        meta: Dict[str, Any],
                        libs_reminder: str = "") -> str:
         """生成 Markdown 格式报告内容。"""
         timestamp = meta.get('timestamp', datetime.datetime.now().isoformat())
         mode = meta.get('mode', 'unknown')
         file_count = meta.get('file_count', 0)
-        libs_change = meta.get('libs_change', False)
-
-        # 处理所有发现为统一格式
-        all_findings = local_findings + ai_findings
-        findings = self.processor.process_all(all_findings)
         has_blocking = any(finding.priority == "严重" for finding in findings)
+        libs_change = meta.get('libs_change', False)
 
         report = []
         report.append("=" * 80)
