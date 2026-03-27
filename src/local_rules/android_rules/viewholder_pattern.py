@@ -22,10 +22,10 @@ VIEW_HOLDER_PATTERN = re.compile(r'class\s+(\w+ViewHolder|ViewHolder)\s*\{')
 
 
 class ViewHolderPatternRule(BaseRule):
-    """Check for improper usage of ViewHolder pattern in Android code.
+    """检查 Android 代码中 ViewHolder 模式的不当使用。
 
-    If findViewById is called multiple times in getView() or onBindViewHolder(),
-    it indicates that ViewHolder pattern is not being used properly.
+    如果在 getView() 或 onBindViewHolder() 中多次调用 findViewById，
+    表明 ViewHolder 模式使用不正确。
     """
 
     @property
@@ -34,7 +34,7 @@ class ViewHolderPatternRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects improper usage of ViewHolder pattern in getView() or onBindViewHolder()"
+        return "检测 getView() 或 onBindViewHolder() 中 ViewHolder 模式的不当使用"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -56,7 +56,7 @@ class ViewHolderPatternRule(BaseRule):
                         file_path=file_diff.file_path,
                         line_number=change.line_number,
                         rule_name=self.name,
-                        message="findViewById call detected - should use ViewHolder pattern for better performance",
+                        message="检测到 findViewById 调用 - 应使用 ViewHolder 模式以提高性能",
                         severity="WARNING",
                         code_snippet=content
                     ))
@@ -102,7 +102,7 @@ class ViewHolderPatternRule(BaseRule):
                     file_path=file_path,
                     line_number=i,
                     rule_name=self.name,
-                    message="findViewById call in getView()/onBindViewHolder() - should use ViewHolder pattern",
+                    message="在 getView()/onBindViewHolder() 中调用 findViewById - 应使用 ViewHolder 模式",
                     severity="WARNING",
                     code_snippet=line_stripped
                 ))
