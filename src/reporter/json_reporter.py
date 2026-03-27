@@ -7,10 +7,10 @@ from .base_reporter import BaseReporter
 
 
 class JSONReporter(BaseReporter):
-    """Generate JSON format report for code review results."""
+    """生成代码审查结果的JSON格式报告。"""
 
     def _serialize_rule_finding(self, finding: RuleFinding) -> Dict[str, Any]:
-        """Serialize RuleFinding to dict."""
+        """将RuleFinding序列化为字典。"""
         return {
             "file_path": finding.file_path,
             "line_number": finding.line_number,
@@ -21,7 +21,7 @@ class JSONReporter(BaseReporter):
         }
 
     def _serialize_ai_finding(self, finding: AIReviewFinding) -> Dict[str, Any]:
-        """Serialize AIReviewFinding to dict."""
+        """将AIReviewFinding序列化为字典。"""
         return {
             "file_path": finding.file_path,
             "line_start": finding.line_start,
@@ -37,7 +37,7 @@ class JSONReporter(BaseReporter):
                        ai_findings: List[AIReviewFinding],
                        meta: Dict[str, Any],
                        libs_reminder: str = "") -> str:
-        """Generate JSON report content."""
+        """生成JSON报告内容。"""
         report_data = {
             "meta": meta,
             "local_findings": [self._serialize_rule_finding(f) for f in local_findings],
@@ -48,5 +48,5 @@ class JSONReporter(BaseReporter):
         return json.dumps(report_data, ensure_ascii=False, indent=2, default=str)
 
     def _get_file_extension(self) -> str:
-        """Get file extension for JSON report."""
+        """获取JSON报告的文件扩展名。"""
         return "json"
