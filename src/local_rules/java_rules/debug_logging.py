@@ -22,7 +22,7 @@ class DebugLoggingRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects debug logging statements (System.out.println, Log.d) that should be removed before commit"
+        return "检测调试日志语句（如System.out.println、Log.d），这些语句应在提交前移除"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -42,7 +42,7 @@ class DebugLoggingRule(BaseRule):
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"Found debug logging statement `{display_str}` - should be removed before commit",
+                    message=f"发现调试日志语句 `{display_str}`，应在提交前移除",
                     severity="BLOCK",
                     code_snippet=content
                 ))
@@ -88,7 +88,7 @@ class DebugLoggingRule(BaseRule):
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"Found debug logging statement `{display_str}` - should be removed before commit",
+                        message=f"发现调试日志语句 `{display_str}`，应在提交前移除",
                         severity="BLOCK",
                         code_snippet=line_stripped
                     ))
