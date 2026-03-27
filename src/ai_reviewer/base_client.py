@@ -23,14 +23,14 @@ class AIReviewResult:
 
 
 class BaseAIClient(ABC):
-    """Base class for AI review clients."""
+    """AI审查客户端的基类。"""
 
     @abstractmethod
     def review_diff(self, file_path: str, diff_content: str, prompt_template: str) -> AIReviewResult:
-        """Review a diff chunk with AI."""
+        """使用AI审查代码差异块。"""
         raise NotImplementedError()
 
     @abstractmethod
     def review_full_file(self, file_path: str, content: str, prompt_template: str) -> AIReviewResult:
-        """Review the full file with AI."""
+        """使用AI审查完整文件。"""
         raise NotImplementedError()
