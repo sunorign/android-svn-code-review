@@ -22,16 +22,16 @@ class Config:
 
     @classmethod
     def load_from_env(cls) -> 'Config':
-        # Get ollama_api_base from environment, default to http://localhost:11434 if not set
+        # 从环境变量获取ollama_api_base，未设置时默认使用http://localhost:11434
         ollama_api_base = os.environ.get('OLLAMA_API_BASE', 'http://localhost:11434')
 
-        # Validate ollama_api_base is a valid URL
+        # 验证ollama_api_base是有效的URL格式
         try:
             result = urlparse(ollama_api_base)
             if not all([result.scheme, result.netloc]):
-                raise ValueError(f"Invalid URL format for OLLAMA_API_BASE: {ollama_api_base}")
+                raise ValueError(f"OLLAMA_API_BASE的URL格式无效: {ollama_api_base}")
         except Exception as e:
-            raise ValueError(f"Invalid URL format for OLLAMA_API_BASE: {ollama_api_base}") from e
+            raise ValueError(f"OLLAMA_API_BASE的URL格式无效: {ollama_api_base}") from e
 
         return cls(
             anthropic_api_key=os.environ.get('ANTHROPIC_API_KEY'),
@@ -50,32 +50,32 @@ class Config:
         )
 
     def has_ai_enabled(self) -> bool:
-        """Check if any AI provider is configured."""
+        """检查是否配置了任何AI提供商。"""
         if self.ai_provider == 'claude' and self.anthropic_api_key:
             return True
         if self.ai_provider == 'openrouter' and self.openrouter_api_key:
             return True
         if self.ai_provider == 'ollama' and self.ollama_api_base:
             return True
-        # Auto-detect if any is available (only consider explicitly configured providers, not default ollama)
+        # 自动检测是否有可用的AI提供商（仅考虑显式配置的提供商，不包括默认的ollama）
         if self.anthropic_api_key:
             return True
         if self.openrouter_api_key:
             return True
-        # Only consider ollama available if it's explicitly configured with a custom URL
+        # 只有在显式配置了自定义URL时，才会将ollama视为可用
         if self.ollama_api_base and self.ollama_api_base != 'http://localhost:11434':
             return True
         return False
 
     def get_active_provider(self) -> Optional[str]:
-        """Get the active AI provider."""
+        """获取当前活跃的AI提供商。"""
         if self.ai_provider:
             return self.ai_provider
         if self.anthropic_api_key:
             return 'claude'
         if self.openrouter_api_key:
             return 'openrouter'
-        # Only consider ollama as active if it's explicitly configured with a custom URL
+        # 只有在显式配置了自定义URL时，才会将ollama视为活跃的
         if self.ollama_api_base and self.ollama_api_base != 'http://localhost:11434':
             return 'ollama'
         return None
