@@ -6,14 +6,14 @@ from src.config import Config
 
 
 class ClaudeClient(BaseAIClient):
-    """Claude API client implementation for AI review."""
+    """Claude API客户端实现，用于AI代码审查。"""
 
     def __init__(self, config: Config):
         """
-        Initialize the Claude API client.
+        初始化Claude API客户端。
 
         Args:
-            config: Configuration object containing Anthropic API key
+            config: 包含Anthropic API密钥的配置对象
         """
         self.config = config
         self.api_key = config.anthropic_api_key
@@ -29,56 +29,56 @@ class ClaudeClient(BaseAIClient):
 
     def review_diff(self, file_path: str, diff_content: str, prompt_template: str) -> AIReviewResult:
         """
-        Review a diff chunk using Claude API.
+        使用Claude API审查代码差异块。
 
         Args:
-            file_path: Path to the file being reviewed
-            diff_content: Diff content to review
-            prompt_template: Prompt template with placeholders
+            file_path: 正在审查的文件路径
+            diff_content: 要审查的差异内容
+            prompt_template: 包含占位符的提示模板
 
         Returns:
-            AIReviewResult containing findings or error
+            包含审查结果或错误的AIReviewResult对象
         """
         return self._review_content(file_path, diff_content, prompt_template, "diff")
 
     def review_full_file(self, file_path: str, content: str, prompt_template: str) -> AIReviewResult:
         """
-        Review a full file using Claude API.
+        使用Claude API审查完整文件。
 
         Args:
-            file_path: Path to the file being reviewed
-            content: Full file content to review
-            prompt_template: Prompt template with placeholders
+            file_path: 正在审查的文件路径
+            content: 要审查的完整文件内容
+            prompt_template: 包含占位符的提示模板
 
         Returns:
-            AIReviewResult containing findings or error
+            包含审查结果或错误的AIReviewResult对象
         """
         return self._review_content(file_path, content, prompt_template, "full_file")
 
     def _review_content(self, file_path: str, content: str, prompt_template: str, review_type: str) -> AIReviewResult:
         """
-        Generic content review method to handle both diff and full file reviews.
+        通用内容审查方法，处理代码差异和完整文件审查。
 
         Args:
-            file_path: Path to the file being reviewed
-            content: Content to review (diff or full file)
-            prompt_template: Prompt template with placeholders
-            review_type: Type of review ("diff" or "full_file")
+            file_path: 正在审查的文件路径
+            content: 要审查的内容（差异或完整文件）
+            prompt_template: 包含占位符的提示模板
+            review_type: 审查类型（"diff"表示差异，"full_file"表示完整文件）
 
         Returns:
-            AIReviewResult containing findings or error
+            包含审查结果或错误的AIReviewResult对象
         """
         try:
-            # Fill prompt template with content
+            # 填充提示模板
             prompt = prompt_template.format(
                 file_path=file_path,
                 content=content
             )
 
-            # Make API call
+            # 发起API调用
             response = self._make_api_call(prompt)
 
-            # Parse response
+            # 解析响应
             if response["success"]:
                 findings = self._parse_findings(response["data"], file_path)
                 return AIReviewResult(
@@ -94,7 +94,7 @@ class ClaudeClient(BaseAIClient):
                 )
 
         except Exception as e:
-            review_type_str = "diff" if review_type == "diff" else "file"
+            review_type_str = "diff" if review_type == "diff" else "full_file"
             return AIReviewResult(
                 success=False,
                 findings=[],
@@ -103,16 +103,16 @@ class ClaudeClient(BaseAIClient):
 
     def _make_api_call(self, prompt: str) -> dict:
         """
-        Make an API call to Claude API.
+        调用Claude API。
 
         Args:
-            prompt: Formatted prompt to send
+            prompt: 格式化后的提示文本
 
         Returns:
-            Dictionary with success status, data or error
+            包含成功状态、数据或错误信息的字典
         """
         try:
-            # Claude API message format
+            # Claude API消息格式
             payload = {
                 "model": self.default_model,
                 "max_tokens": self.max_tokens,
@@ -133,14 +133,14 @@ class ClaudeClient(BaseAIClient):
 
             if response.status_code == 200:
                 data = response.json()
-                # Extract content from Claude's response
-                # Claude returns content in ["content"][0]["text"]
+                # 从Claude响应中提取内容
+                # Claude返回的内容格式为["content"][0]["text"]
                 if "content" in data and len(data["content"]) > 0:
                     text_response = data["content"][0]["text"]
 
-                    # Parse JSON from response text
+                    # 解析响应文本中的JSON
                     try:
-                        # Find JSON object in response (handle possible markdown wrapping)
+                        # 查找JSON对象（处理可能的markdown包装）
                         if text_response.strip().startswith("```json"):
                             json_str = text_response.strip().split("```json")[1].split("```")[0].strip()
                         else:
@@ -155,41 +155,41 @@ class ClaudeClient(BaseAIClient):
                     except Exception as e:
                         return {
                             "success": False,
-                            "error": f"Failed to parse JSON response: {str(e)}, Raw response: {text_response}"
+                            "error": f"解析JSON响应失败: {str(e)}, 原始响应: {text_response}"
                         }
                 else:
                     return {
                         "success": False,
-                        "error": "No content in API response"
+                        "error": "API响应中没有内容"
                     }
             else:
                 return {
                     "success": False,
-                    "error": f"API call failed with status {response.status_code}: {response.text}"
+                    "error": f"API调用失败，状态码: {response.status_code}: {response.text}"
                 }
 
         except Exception as e:
             return {
                 "success": False,
-                "error": f"API request failed: {str(e)}"
+                "error": f"API请求失败: {str(e)}"
             }
 
     def _parse_findings(self, data: dict, file_path: str) -> List[AIReviewFinding]:
         """
-        Parse findings from API response.
+        解析API响应中的审查结果。
 
         Args:
-            data: Parsed JSON response data
-            file_path: File path for findings
+            data: 解析后的JSON响应数据
+            file_path: 审查结果对应的文件路径
 
         Returns:
-            List of AIReviewFinding objects
+            AIReviewFinding对象列表
         """
         findings = []
 
         if "findings" in data:
             for item in data["findings"]:
-                # Ensure required fields are present
+                # 确保所需字段存在
                 if all(key in item for key in ["issue_type", "severity", "message"]):
                     finding = AIReviewFinding(
                         file_path=item.get("file_path", file_path),
