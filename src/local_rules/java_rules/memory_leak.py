@@ -6,20 +6,20 @@ from src.diff_parser import DiffChange, FileDiff
 
 
 class MemoryLeakRule(BaseRule):
-    """Check for potential memory leak risks from non-static inner classes holding Activity references."""
+    """检查非静态内部类持有 Activity 引用可能导致的内存泄漏风险。"""
 
-    # Patterns for non-static inner classes that could cause memory leaks
+    # 可能导致内存泄漏的非静态内部类模式
     INNER_CLASS_PATTERNS = [
         (re.compile(r'private\s+class\s+[a-zA-Z_][a-zA-Z0-9_]*\s+implements\s+View\.OnClickListener'),
-         'non-static inner OnClickListener class'),
+         '非静态内部 OnClickListener 类'),
         (re.compile(r'private\s+class\s+[a-zA-Z_][a-zA-Z0-9_]*\s+implements\s+Runnable'),
-         'non-static inner Runnable class'),
+         '非静态内部 Runnable 类'),
         (re.compile(r'private\s+class\s+[a-zA-Z_][a-zA-Z0-9_]*\s+implements\s+View\.OnTouchListener'),
-         'non-static inner OnTouchListener class'),
+         '非静态内部 OnTouchListener 类'),
         (re.compile(r'private\s+class\s+[a-zA-Z_][a-zA-Z0-9_]*\s+implements\s+View\.OnLongClickListener'),
-         'non-static inner OnLongClickListener class'),
+         '非静态内部 OnLongClickListener 类'),
         (re.compile(r'private\s+class\s+[a-zA-Z_][a-zA-Z0-9_]*\s+extends\s+AsyncTask'),
-         'non-static inner AsyncTask class'),
+         '非静态内部 AsyncTask 类'),
     ]
 
     @property
@@ -28,8 +28,7 @@ class MemoryLeakRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Detects potential memory leaks from non-static inner classes holding Activity references"
-
+        return "检测非静态内部类持有 Activity 引用可能导致的内存泄漏"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -49,7 +48,7 @@ class MemoryLeakRule(BaseRule):
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"Found potential memory leak: {class_type} holding Activity reference",
+                    message=f"发现潜在内存泄漏: {class_type} 持有 Activity 引用",
                     severity="WARNING",
                     code_snippet=content
                 ))
@@ -94,7 +93,7 @@ class MemoryLeakRule(BaseRule):
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"Found potential memory leak: {class_type} holding Activity reference",
+                        message=f"发现潜在内存泄漏: {class_type} 持有 Activity 引用",
                         severity="WARNING",
                         code_snippet=line_stripped
                     ))
