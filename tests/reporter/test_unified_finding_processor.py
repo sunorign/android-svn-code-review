@@ -89,8 +89,8 @@ def test_convert_ai_finding_warning():
     assert unified_finding.priority == "一般"
 
 
-def test_convert_all_findings():
-    """测试转换所有类型的发现。"""
+def test_process_all_findings():
+    """测试处理所有类型的发现。"""
     processor = UnifiedFindingProcessor()
 
     rule_finding = RuleFinding(
@@ -118,8 +118,9 @@ def test_convert_all_findings():
         suggestion="使用静态内部类 + WeakReference"
     )
 
-    all_findings = [rule_finding, ai_finding, unified_finding]
-    converted = processor.convert_all(all_findings)
+    local_findings = [rule_finding, unified_finding]
+    ai_findings = [ai_finding]
+    converted = processor.process_all(local_findings, ai_findings)
 
     assert len(converted) == 3
     for finding in converted:
@@ -166,7 +167,7 @@ def test_empty_findings():
     """测试转换空发现列表。"""
     processor = UnifiedFindingProcessor()
 
-    converted = processor.convert_all([])
+    converted = processor.process_all([], [])
     assert len(converted) == 0
 
     grouped_priority = processor.group_by_priority([])

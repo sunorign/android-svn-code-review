@@ -37,11 +37,21 @@ class UnifiedFindingProcessor:
             suggestion=finding.suggestion or ""
         )
 
-    def convert_all(self, findings: List[Any]) -> List[UnifiedFinding]:
-        """将所有类型的发现转换为统一格式的列表。"""
+    def process_all(self, local_findings: List[Any], ai_findings: List[Any]) -> List[UnifiedFinding]:
+        """将所有类型的发现（本地和AI）转换为统一格式的列表。"""
         unified_findings = []
 
-        for finding in findings:
+        # 处理本地规则发现
+        for finding in local_findings:
+            if isinstance(finding, RuleFinding):
+                unified_findings.append(self.convert_rule_finding(finding))
+            elif isinstance(finding, AIReviewFinding):
+                unified_findings.append(self.convert_ai_finding(finding))
+            elif isinstance(finding, UnifiedFinding):
+                unified_findings.append(finding)
+
+        # 处理AI发现
+        for finding in ai_findings:
             if isinstance(finding, RuleFinding):
                 unified_findings.append(self.convert_rule_finding(finding))
             elif isinstance(finding, AIReviewFinding):
@@ -50,6 +60,11 @@ class UnifiedFindingProcessor:
                 unified_findings.append(finding)
 
         return unified_findings
+
+    # 保持向后兼容
+    def convert_all(self, findings: List[Any]) -> List[UnifiedFinding]:
+        """将所有类型的发现转换为统一格式的列表（向后兼容方法）。"""
+        return self.process_all(findings)
 
     def group_by_priority(self, findings: List[UnifiedFinding]) -> dict:
         """按优先级分组发现。"""
