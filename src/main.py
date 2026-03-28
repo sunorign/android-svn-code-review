@@ -39,7 +39,7 @@ def main():
     """主审查流程"""
     try:
         # 加载配置
-        config = JsonConfigLoader.load_with_fallback()
+        config = JsonConfigLoader.load()
 
         # 步骤1: 获取SVN diff
         logger.info("步骤1: 收集SVN差异")
