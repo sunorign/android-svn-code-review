@@ -10,15 +10,15 @@ class OpenRouterClient(BaseAIClient):
 
     def __init__(self, config: Config):
         """
-        初始化OpenRouter API客户端。
+        初始化OpenRouter客户端。
 
-        Args:
+        参数:
             config: 包含OpenRouter API密钥的配置对象
         """
         self.config = config
-        self.api_key = config.openrouter_api_key or "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"
+        self.api_key = config.openrouter_api_key
         self.base_url = config.openrouter_api_url or "https://openrouter.ai/api/v1/chat/completions"
-        self.default_model = config.openrouter_model or "minimax/minimax-m2.5"
+        self.default_model = config.openrouter_model or "anthropic/claude-3-sonnet"
         self.max_tokens = config.openrouter_max_tokens or 4096
         self.timeout = config.api_timeout or 60
         self.headers = {
