@@ -19,8 +19,8 @@ class OpenRouterClient(BaseAIClient):
         self.api_key = config.openrouter_api_key
         self.base_url = config.openrouter_api_url or "https://openrouter.ai/api/v1/chat/completions"
         self.default_model = config.openrouter_model or "anthropic/claude-3-sonnet"
-        self.max_tokens = config.openrouter_max_tokens or 4096
-        self.timeout = config.api_timeout or 60
+        self.max_tokens = config.openrouter_max_tokens
+        self.timeout = config.api_timeout
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": config.openrouter_http_referer or "",
