@@ -1,7 +1,7 @@
 import os
 import json
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional
 
 @dataclass
 class Config:
@@ -107,7 +107,7 @@ class JsonConfigLoader:
         config.openrouter_api_url = openrouter_config.get('api_url')
         config.openrouter_model = openrouter_config.get('model')
         config.openrouter_max_tokens = openrouter_config.get('max_tokens', 4096)
-        config.openrouter_http_referer = openrouter_config.get('http_referer', '')
+        config.openrouter_http_referer = openrouter_config.get('http_referer')
 
         # Ollama
         ollama_config = providers.get('ollama', {})
