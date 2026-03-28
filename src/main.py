@@ -20,7 +20,7 @@ import logging
 from src.diff_parser import DiffParser
 from src.scanner import FileScanner
 from src.local_rules import load_all_rules
-from src.config import Config
+from src.config import Config, JsonConfigLoader
 from src.ai_reviewer import get_ai_client
 from src.reporter import TextReporter, HTMLReporter, JSONReporter
 
@@ -30,7 +30,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(f"code_review_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        logging.FileHandler(f"code_review_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log", encoding="utf-8")
     ]
 )
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def main():
     """主审查流程"""
     try:
         # 加载配置
-        config = Config.load_from_env()
+        config = JsonConfigLoader.load_with_fallback()
 
         # 步骤1: 获取SVN diff
         logger.info("步骤1: 收集SVN差异")
@@ -60,6 +60,8 @@ def main():
         parser = DiffParser(diff_output)
         file_diffs = parser.parse()
         logger.info(f"在差异中发现 {len(file_diffs)} 个修改的文件")
+        for fd in file_diffs:
+            logger.info(f"  - {fd.file_path}")
 
         # 步骤3: 扫描文件
         logger.info("步骤3: 扫描文件")
@@ -78,8 +80,10 @@ def main():
         for file_diff in scan_results["file_diffs"]:
             for rule in rules:
                 try:
-                    rule_findings = rule.check_diff(file_diff)
-                    findings.extend(rule_findings)
+                    # 遍历每个变更块，对每个变更调用check_diff
+                    for change in file_diff.changes:
+                        rule_findings = rule.check_diff(file_diff, change)
+                        findings.extend(rule_findings)
                 except Exception as e:
                     logger.error(f"对文件 {file_diff.file_path} 运行规则 {rule.__class__.__name__} 时出错: {e}")
 
@@ -152,8 +156,9 @@ def main():
 def run_full_file_review(file_diffs, rules, ai_client):
     """对所有修改过的文件运行全文审查"""
     findings = []
-    for file_diff in file_diffs:
-        logger.debug(f"审查文件: {file_diff.file_path}")
+    logger.info(f"开始对 {len(file_diffs)} 个文件进行全文审查")
+    for idx, file_diff in enumerate(file_diffs, 1):
+        logger.info(f"[{idx}/{len(file_diffs)}] 审查文件: {file_diff.file_path}")
         # 读取完整文件内容
         try:
             with open(file_diff.file_path, "r", encoding="utf-8") as f:
@@ -182,9 +187,16 @@ def run_full_file_review(file_diffs, rules, ai_client):
         # 如果已配置，运行AI审查
         if ai_client:
             try:
-                logger.debug(f"对文件运行AI审查: {file_diff.file_path}")
-                ai_findings = ai_client.review_code(file_diff.file_path, file_content)
-                findings.extend(ai_findings)
+                from src.ai_reviewer.prompt_templates import load_prompt_template
+                logger.info(f"[{idx}/{len(file_diffs)}] 正在AI审查: {file_diff.file_path}")
+                prompt_template = load_prompt_template("java_full_review")
+                ai_result = ai_client.review_full_file(file_diff.file_path, file_content, prompt_template)
+                if ai_result.success and ai_result.findings:
+                    ai_findings = ai_result.findings
+                    findings.extend(ai_findings)
+                    logger.info(f"[{idx}/{len(file_diffs)}] AI发现 {len(ai_findings)} 个问题: {file_diff.file_path}")
+                elif not ai_result.success:
+                    logger.warning(f"AI审查 {file_diff.file_path} 失败: {ai_result.error_message}")
             except Exception as e:
                 logger.error(f"对文件 {file_diff.file_path} 进行AI审查时出错: {e}")
 

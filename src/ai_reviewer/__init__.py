@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def get_ai_client(config: Config) -> Optional[BaseAIClient]:
     """Factory method to get the configured AI client."""
-    provider = config.get_active_provider()
+    provider = config.ai_provider
     if not provider:
         return None
 
