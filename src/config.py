@@ -142,7 +142,6 @@ class JsonConfigLoader:
     def _load_from_env() -> Config:
         """从环境变量加载配置（向后兼容）。"""
         # 保留原环境变量读取逻辑用于向后兼容
-        import os
         from urllib.parse import urlparse
 
         ollama_api_base = os.environ.get('OLLAMA_API_BASE', 'http://localhost:11434')
@@ -164,6 +163,7 @@ class JsonConfigLoader:
             openrouter_api_url=os.environ.get('OPENROUTER_API_URL'),
             openrouter_model=os.environ.get('OPENROUTER_MODEL'),
             openrouter_max_tokens=int(os.environ.get('OPENROUTER_MAX_TOKENS', 4096)),
+            openrouter_http_referer=os.environ.get('OPENROUTER_HTTP_REFERER', ''),
             ollama_api_base=ollama_api_base,
             ollama_model=os.environ.get('OLLAMA_MODEL'),
             ollama_max_tokens=int(os.environ.get('OLLAMA_MAX_TOKENS', 4096)),
