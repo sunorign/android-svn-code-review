@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la *.log)",
+      "Bash(cd:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
