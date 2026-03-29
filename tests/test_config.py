@@ -121,7 +121,3 @@ def test_openrouter_http_referer_field():
     assert config.openrouter_http_referer == 'https://example.com'
 
 
-def test_load_from_env_default_provider():
-    """Test that default provider is openrouter when no environment variable is set."""
-    config = Config.load_from_env()
-    assert config.ai_provider == 'openrouter'

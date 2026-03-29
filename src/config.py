@@ -30,21 +30,43 @@ class Config:
 
     def has_ai_enabled(self) -> bool:
         """检查是否启用了AI审查。"""
-        if not self.ai_provider:
-            return False
-        match self.ai_provider:
-            case 'claude':
-                return self.anthropic_api_key is not None and len(self.anthropic_api_key) > 0
-            case 'openrouter':
-                return self.openrouter_api_key is not None and len(self.openrouter_api_key) > 0
-            case 'ollama':
-                return self.ollama_api_base is not None
-            case _:
-                return False
+        if self.ai_provider == 'claude' and self.anthropic_api_key:
+            return True
+        if self.ai_provider == 'openrouter' and self.openrouter_api_key:
+            return True
+        if self.ai_provider == 'ollama' and self.ollama_api_base:
+            return True
+        # Auto-detect if any is available (only consider explicitly configured providers, not default ollama)
+        if self.anthropic_api_key:
+            return True
+        if self.openrouter_api_key:
+            return True
+        # Only consider ollama available if it's explicitly configured with a custom URL
+        if self.ollama_api_base and self.ollama_api_base != 'http://localhost:11434':
+            return True
+        return False
 
     def get_active_provider(self) -> Optional[str]:
         """获取当前配置的AI提供者。"""
-        return self.ai_provider
+        # If ai_provider is explicitly set and valid, use it
+        if self.ai_provider:
+            # Only use the explicitly set ai_provider if it has the required configuration
+            if self.ai_provider == 'claude' and self.anthropic_api_key:
+                return 'claude'
+            if self.ai_provider == 'openrouter' and self.openrouter_api_key:
+                return 'openrouter'
+            if self.ai_provider == 'ollama' and self.ollama_api_base:
+                return 'ollama'
+
+        # Auto-detect based on available credentials
+        if self.anthropic_api_key:
+            return 'claude'
+        if self.openrouter_api_key:
+            return 'openrouter'
+        # Only consider ollama as active if it's explicitly configured with a custom URL
+        if self.ollama_api_base and self.ollama_api_base != 'http://localhost:11434':
+            return 'ollama'
+        return None
 
     @classmethod
     def load_from_env(cls) -> 'Config':
@@ -152,21 +174,19 @@ class JsonConfigLoader:
         except Exception as e:
             raise ValueError(f"OLLAMA_API_BASE的URL格式无效: {ollama_api_base}") from e
 
-        default_openrouter_key = "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"
-
         return Config(
             anthropic_api_key=os.environ.get('ANTHROPIC_API_KEY'),
             anthropic_api_url=os.environ.get('ANTHROPIC_API_URL'),
             anthropic_model=os.environ.get('ANTHROPIC_MODEL'),
             anthropic_max_tokens=int(os.environ.get('ANTHROPIC_MAX_TOKENS', 4096)),
-            openrouter_api_key=os.environ.get('OPENROUTER_API_KEY', default_openrouter_key),
+            openrouter_api_key=os.environ.get('OPENROUTER_API_KEY'),
             openrouter_api_url=os.environ.get('OPENROUTER_API_URL'),
             openrouter_model=os.environ.get('OPENROUTER_MODEL'),
             openrouter_max_tokens=int(os.environ.get('OPENROUTER_MAX_TOKENS', 4096)),
-            openrouter_http_referer=os.environ.get('OPENROUTER_HTTP_REFERER', ''),
+            openrouter_http_referer=os.environ.get('OPENROUTER_HTTP_REFERER'),
             ollama_api_base=ollama_api_base,
             ollama_model=os.environ.get('OLLAMA_MODEL'),
             ollama_max_tokens=int(os.environ.get('OLLAMA_MAX_TOKENS', 4096)),
             api_timeout=int(os.environ.get('API_TIMEOUT', 60)),
-            ai_provider=os.environ.get('AI_REVIEW_PROVIDER', 'openrouter'),
+            ai_provider=os.environ.get('AI_REVIEW_PROVIDER'),
         )
