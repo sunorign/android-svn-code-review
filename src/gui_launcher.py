@@ -7,9 +7,7 @@ import sys
 import tkinter
 from tkinter import filedialog, messagebox, ttk
 import webbrowser
-import subprocess
 import logging
-from datetime import datetime
 
 # 添加项目根目录到路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,9 +24,6 @@ class CodeReviewGUI:
 
         # 选中的项目目录
         self.project_dir = tkinter.StringVar()
-
-        # 是否进行全文AI审查
-        self.enable_ai = tkinter.BooleanVar(value=True)
 
         self.create_widgets()
 
@@ -62,16 +57,6 @@ class CodeReviewGUI:
         browse_btn = ttk.Button(dir_frame, text="浏览...", command=self.browse_dir)
         browse_btn.pack(side='right')
 
-        # AI审查选项
-        ai_frame = ttk.Frame(frame1)
-        ai_frame.pack(fill='x', pady=10)
-
-        ai_check = ttk.Checkbutton(
-            ai_frame,
-            text="启用全文AI审查（需要配置API密钥）",
-            variable=self.enable_ai
-        )
-        ai_check.pack(anchor='w')
 
         # 开始按钮
         start_btn = ttk.Button(
@@ -139,7 +124,7 @@ class CodeReviewGUI:
                     )
                     latest_html = os.path.join(report_dir, html_files[-1])
                     # 用浏览器打开
-                    webbrowser.open(f'file://{latest_html}')
+                    webbrowser.open(f'file:///{latest_html.replace(os.sep, "/")}')
                     messagebox.showinfo(
                         "完成",
                         f"代码审查完成!\n报告已在浏览器打开:\n{latest_html}"
