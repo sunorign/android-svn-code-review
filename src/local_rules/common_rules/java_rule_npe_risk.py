@@ -1,5 +1,9 @@
+"""
+Java 规则 - 检查潜在空指针异常风险
+功能：检测在可能为空的变量上直接调用方法，可能导致 NullPointerException
+"""
 import re
-from typing import List, Tuple, Optional
+from typing import List
 
 from src.local_rules.base_rule import BaseRule, RuleFinding
 from src.diff_parser import DiffChange, FileDiff
@@ -24,12 +28,6 @@ class NPERiskRule(BaseRule):
         (re.compile(r'!=\s*null'), '非空值比较'),
     ]
 
-    # 用于检测空值检查后变量使用的简单模式
-    NULL_CHECK_PATTERNS = [
-        re.compile(r'if\s*\(\s*([a-zA-Z_][a-zA-Z0-9_\.]*)\s*==\s*null\s*\)'),
-        re.compile(r'if\s*\(\s*([a-zA-Z_][a-zA-Z0-9_\.]*)\s*!=\s*null\s*\)'),
-    ]
-
     @property
     def name(self) -> str:
         return "Java-NPERisk"
@@ -37,7 +35,6 @@ class NPERiskRule(BaseRule):
     @property
     def description(self) -> str:
         return "检测在可能为空的变量上调用方法的潜在NPE风险"
-
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []

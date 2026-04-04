@@ -1,5 +1,9 @@
+"""
+Java 规则 - 检查潜在内存泄漏
+功能：检测非静态内部类（OnClickListener, Runnable, AsyncTask）持有 Activity 引用可能导致的内存泄漏
+"""
 import re
-from typing import List, Tuple, Optional
+from typing import List
 
 from src.local_rules.base_rule import BaseRule, RuleFinding
 from src.diff_parser import DiffChange, FileDiff

@@ -1,3 +1,7 @@
+"""
+Android 框架规则 - 检查 ViewHolder 模式正确使用
+功能：检测在 getView/onBindViewHolder 中直接调用 findViewById，未使用 ViewHolder 模式复用，影响 ListView/RecyclerView 性能
+"""
 import re
 from typing import List
 

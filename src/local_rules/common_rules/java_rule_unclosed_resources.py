@@ -1,3 +1,7 @@
+"""
+Java 规则 - 检查未关闭的资源
+功能：检测 Cursor、FileInputStream、OutputStream、Connection、Statement 等资源创建后未关闭
+"""
 import re
 from typing import List
 
@@ -5,31 +9,25 @@ from src.local_rules.base_rule import BaseRule, RuleFinding
 from src.diff_parser import DiffChange, FileDiff
 
 
-# 匹配 http:// 或 https:// 后面跟着IP地址或域名，但不是 localhost 的模式
-HARDCODED_URL_PATTERN = re.compile(
-    r'https?://'  # 匹配 http:// 或 https://
-    r'(?!localhost|127\.0\.0\.1)'  # 排除 localhost 和 127.0.0.1
-    r'(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z0-9]{2,}|'  # 域名模式（支持 .io, .app, .tech 等现代顶级域名）
-    r'(?:(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|'  # IPv4地址模式
-    r'\[([0-9a-fA-F:.]+)\])'  # IPv6地址模式（带方括号，如 [::1] 或 [2001:db8::1]）
-    r'(?::\d+)?'  # 可选的端口号
-    r'(?:/[^\s"]*)?'  # 可选的路径
-)
+class UnclosedResourcesRule(BaseRule):
+    """检查未关闭的资源，如 Cursor、Stream、Connection、FileInputStream 等。"""
 
-
-class HardcodedUrlsRule(BaseRule):
-    """检查代码中的硬编码URL/IP地址。
-
-    URL/IP地址应放在配置文件中，而不是硬编码在代码中。
-    """
+    RESOURCE_PATTERNS = [
+        (re.compile(r'new\s+Cursor\s*\('), 'Cursor'),
+        (re.compile(r'new\s+FileInputStream\s*\('), 'FileInputStream'),
+        (re.compile(r'new\s+FileOutputStream\s*\('), 'FileOutputStream'),
+        (re.compile(r'new\s+Connection\s*\('), 'Connection'),
+        (re.compile(r'new\s+Statement\s*\('), 'Statement'),
+        (re.compile(r'Stream\s*<'), 'Stream'),
+    ]
 
     @property
     def name(self) -> str:
-        return "Android-HardcodedUrls"
+        return "Java-UnclosedResources"
 
     @property
     def description(self) -> str:
-        return "检测应放在配置文件中的硬编码URL或IP地址"
+        return "检测未关闭的资源，如 Cursor、Stream、Connection、FileInputStream，这些资源应该被正确关闭"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -39,14 +37,17 @@ class HardcodedUrlsRule(BaseRule):
         if self._is_line_comment(content):
             return findings
 
-        match = HARDCODED_URL_PATTERN.search(line_full)
-        if match:
-            if self._is_pattern_in_string(line_full, match.start(), match.end()):
+        for pattern, resource_type in self.RESOURCE_PATTERNS:
+            match = pattern.search(line_full)
+            if match:
+                if self._is_pattern_in_string(line_full, match.start(), match.end()):
+                    continue
+
                 findings.append(RuleFinding(
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
+                    message=f"发现未关闭的资源 `{resource_type}` - 应该被正确关闭",
                     severity="WARNING",
                     code_snippet=content
                 ))
@@ -62,7 +63,6 @@ class HardcodedUrlsRule(BaseRule):
             line_stripped = line.strip()
             current_line = line
 
-            # 处理多行注释
             if in_multiline_comment:
                 if '*/' in current_line:
                     in_multiline_comment = False
@@ -82,14 +82,17 @@ class HardcodedUrlsRule(BaseRule):
             if current_line.strip().startswith('//'):
                 continue
 
-            match = HARDCODED_URL_PATTERN.search(current_line)
-            if match:
-                if self._is_pattern_in_string(current_line, match.start(), match.end()):
+            for pattern, resource_type in self.RESOURCE_PATTERNS:
+                match = pattern.search(current_line)
+                if match:
+                    if self._is_pattern_in_string(current_line, match.start(), match.end()):
+                        continue
+
                     findings.append(RuleFinding(
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
+                        message=f"发现未关闭的资源 `{resource_type}` - 应该被正确关闭",
                         severity="WARNING",
                         code_snippet=line_stripped
                     ))

@@ -1,3 +1,7 @@
+"""
+Android 框架规则 - 检查禁止提交的二进制文件
+功能：检测 APK、DEX、JAR 等二进制文件提交到代码仓库，这些应该通过包管理工具管理
+"""
 from typing import List
 
 from src.local_rules.base_rule import BaseRule, RuleFinding

@@ -1,30 +1,33 @@
+"""
+Java 规则 - 检查调试日志语句
+功能：检测代码中的 System.out.println, System.err.println, Log.d, Log.v
+这些调试日志应该在提交代码前移除
+"""
 import re
-from typing import List, Tuple, Optional
+from typing import List
 
 from src.local_rules.base_rule import BaseRule, RuleFinding
 from src.diff_parser import DiffChange, FileDiff
 
 
-class UnclosedResourcesRule(BaseRule):
-    """检查未关闭的资源，如 Cursor、Stream、Connection、FileInputStream 等。"""
+DEBUG_LOG_PATTERNS = [
+    (re.compile(r'System\.out\.println'), 'System.out.println'),
+    (re.compile(r'System\.err\.println'), 'System.err.println'),
+    (re.compile(r'Log\.d\b'), 'Log.d'),
+    (re.compile(r'Log\.v\b'), 'Log.v'),
+]
 
-    RESOURCE_PATTERNS = [
-        (re.compile(r'new\s+Cursor\s*\('), 'Cursor'),
-        (re.compile(r'new\s+FileInputStream\s*\('), 'FileInputStream'),
-        (re.compile(r'new\s+FileOutputStream\s*\('), 'FileOutputStream'),
-        (re.compile(r'new\s+Connection\s*\('), 'Connection'),
-        (re.compile(r'new\s+Statement\s*\('), 'Statement'),
-        (re.compile(r'Stream\s*<'), 'Stream'),
-    ]
+
+class DebugLoggingRule(BaseRule):
+    """检查不应提交的调试日志语句。"""
 
     @property
     def name(self) -> str:
-        return "Java-UnclosedResources"
+        return "Java-DebugLogging"
 
     @property
     def description(self) -> str:
-        return "检测未关闭的资源，如 Cursor、Stream、Connection、FileInputStream，这些资源应该被正确关闭"
-
+        return "检测调试日志语句（如System.out.println、Log.d），这些语句应在提交前移除"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -34,7 +37,7 @@ class UnclosedResourcesRule(BaseRule):
         if self._is_line_comment(content):
             return findings
 
-        for pattern, resource_type in self.RESOURCE_PATTERNS:
+        for pattern, display_str in DEBUG_LOG_PATTERNS:
             match = pattern.search(line_full)
             if match:
                 if self._is_pattern_in_string(line_full, match.start(), match.end()):
@@ -44,8 +47,8 @@ class UnclosedResourcesRule(BaseRule):
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"发现未关闭的资源 `{resource_type}` - 应该被正确关闭",
-                    severity="WARNING",
+                    message=f"发现调试日志语句 `{display_str}`，应在提交前移除",
+                    severity="BLOCK",
                     code_snippet=content
                 ))
 
@@ -60,6 +63,7 @@ class UnclosedResourcesRule(BaseRule):
             line_stripped = line.strip()
             current_line = line
 
+            # 处理多行注释
             if in_multiline_comment:
                 if '*/' in current_line:
                     in_multiline_comment = False
@@ -79,7 +83,7 @@ class UnclosedResourcesRule(BaseRule):
             if current_line.strip().startswith('//'):
                 continue
 
-            for pattern, resource_type in self.RESOURCE_PATTERNS:
+            for pattern, display_str in DEBUG_LOG_PATTERNS:
                 match = pattern.search(current_line)
                 if match:
                     if self._is_pattern_in_string(current_line, match.start(), match.end()):
@@ -89,8 +93,8 @@ class UnclosedResourcesRule(BaseRule):
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"发现未关闭的资源 `{resource_type}` - 应该被正确关闭",
-                        severity="WARNING",
+                        message=f"发现调试日志语句 `{display_str}`，应在提交前移除",
+                        severity="BLOCK",
                         code_snippet=line_stripped
                     ))
 

@@ -1,5 +1,9 @@
+"""
+Java 规则 - 检查硬编码的敏感信息
+功能：检测密码、密钥、API Key、Token 等敏感信息硬编码在代码中
+"""
 import re
-from typing import List, Tuple, Optional
+from typing import List
 
 from src.local_rules.base_rule import BaseRule, RuleFinding
 from src.diff_parser import DiffChange, FileDiff
@@ -23,7 +27,6 @@ class HardcodedSecretsRule(BaseRule):
     @property
     def description(self) -> str:
         return "检测硬编码的密钥、密码和API密钥，这些内容不应出现在源代码中"
-
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         return self._check_line(file_diff.file_path, change.line_number, change.content)

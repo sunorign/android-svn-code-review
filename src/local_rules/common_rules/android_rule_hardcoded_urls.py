@@ -1,28 +1,39 @@
+"""
+Android 框架规则 - 检查硬编码 URL/IP 地址
+功能：检测代码中硬编码的服务器地址、IP，这些应该放在配置文件中方便部署
+"""
 import re
-from typing import List, Tuple, Optional
+from typing import List
 
 from src.local_rules.base_rule import BaseRule, RuleFinding
 from src.diff_parser import DiffChange, FileDiff
 
 
-DEBUG_LOG_PATTERNS = [
-    (re.compile(r'System\.out\.println'), 'System.out.println'),
-    (re.compile(r'System\.err\.println'), 'System.err.println'),
-    (re.compile(r'Log\.d\b'), 'Log.d'),
-    (re.compile(r'Log\.v\b'), 'Log.v'),
-]
+# 匹配 http:// 或 https:// 后面跟着IP地址或域名，但不是 localhost 的模式
+HARDCODED_URL_PATTERN = re.compile(
+    r'https?://'  # 匹配 http:// 或 https://
+    r'(?!localhost|127\.0\.0\.1)'  # 排除 localhost 和 127.0.0.1
+    r'(?:(?:[a-zA-Z0-9-]+\.)+[a-zA-Z0-9]{2,}|'  # 域名模式（支持 .io, .app, .tech 等现代顶级域名）
+    r'(?:(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|'  # IPv4地址模式
+    r'\[([0-9a-fA-F:.]+)\])'  # IPv6地址模式（带方括号，如 [::1] 或 [2001:db8::1]）
+    r'(?::\d+)?'  # 可选的端口号
+    r'(?:/[^\s"]*)?'  # 可选的路径
+)
 
 
-class DebugLoggingRule(BaseRule):
-    """检查不应提交的调试日志语句。"""
+class HardcodedUrlsRule(BaseRule):
+    """检查代码中的硬编码URL/IP地址。
+
+    URL/IP地址应放在配置文件中，而不是硬编码在代码中。
+    """
 
     @property
     def name(self) -> str:
-        return "Java-DebugLogging"
+        return "Android-HardcodedUrls"
 
     @property
     def description(self) -> str:
-        return "检测调试日志语句（如System.out.println、Log.d），这些语句应在提交前移除"
+        return "检测应放在配置文件中的硬编码URL或IP地址"
 
     def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
         findings = []
@@ -32,18 +43,15 @@ class DebugLoggingRule(BaseRule):
         if self._is_line_comment(content):
             return findings
 
-        for pattern, display_str in DEBUG_LOG_PATTERNS:
-            match = pattern.search(line_full)
-            if match:
-                if self._is_pattern_in_string(line_full, match.start(), match.end()):
-                    continue
-
+        match = HARDCODED_URL_PATTERN.search(line_full)
+        if match:
+            if not self._is_pattern_in_string(line_full, match.start(), match.end()):
                 findings.append(RuleFinding(
                     file_path=file_diff.file_path,
                     line_number=change.line_number,
                     rule_name=self.name,
-                    message=f"发现调试日志语句 `{display_str}`，应在提交前移除",
-                    severity="BLOCK",
+                    message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
+                    severity="WARNING",
                     code_snippet=content
                 ))
 
@@ -78,18 +86,15 @@ class DebugLoggingRule(BaseRule):
             if current_line.strip().startswith('//'):
                 continue
 
-            for pattern, display_str in DEBUG_LOG_PATTERNS:
-                match = pattern.search(current_line)
-                if match:
-                    if self._is_pattern_in_string(current_line, match.start(), match.end()):
-                        continue
-
+            match = HARDCODED_URL_PATTERN.search(current_line)
+            if match:
+                if not self._is_pattern_in_string(current_line, match.start(), match.end()):
                     findings.append(RuleFinding(
                         file_path=file_path,
                         line_number=i,
                         rule_name=self.name,
-                        message=f"发现调试日志语句 `{display_str}`，应在提交前移除",
-                        severity="BLOCK",
+                        message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
+                        severity="WARNING",
                         code_snippet=line_stripped
                     ))
 
