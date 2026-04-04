@@ -11,6 +11,7 @@ SuperPower 代码审查工具的主入口点。
 """
 
 import sys
+import argparse
 import subprocess
 import datetime
 import tkinter as tk
@@ -19,9 +20,10 @@ import logging
 
 from src.diff_parser import DiffParser
 from src.scanner import FileScanner
-from src.local_rules import load_all_rules
+from src.local_rules import load_all_rules, load_project_rules
 from src.config import Config, JsonConfigLoader
 from src.ai_reviewer import get_ai_client
+from src.ai_reviewer.prompt_templates import get_project_prompts, load_prompt_content
 from src.reporter import TextReporter, HTMLReporter, JSONReporter
 
 # 配置日志
@@ -35,9 +37,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 def main():
     """主审查流程"""
     try:
+        # 解析命令行参数
+        parser = argparse.ArgumentParser(description='SuperPower Code Review')
+        parser.add_argument('--project', help='Project key to load specific rules and prompts')
+        args = parser.parse_args()
+        project_key = args.project
+
         # 加载配置
         config = JsonConfigLoader.load()
 
@@ -74,7 +83,12 @@ def main():
 
         # 步骤4: 在diff上运行本地规则
         logger.info("步骤4: 在差异上运行本地规则")
-        rules = load_all_rules()
+        if project_key:
+            from src.local_rules import load_project_rules
+            rules = load_project_rules(project_key)
+            logger.info(f"加载项目 [{project_key}] 配置的规则: {len(rules)} 条规则")
+        else:
+            rules = load_all_rules()
         findings = []
 
         for file_diff in scan_results["file_diffs"]:
@@ -101,7 +115,7 @@ def main():
                 "timestamp": datetime.datetime.now().isoformat(),
                 "mode": mode,
                 "file_count": len(file_diffs),
-                "has_block_issues": True
+                "has_block_issues": True,
             }
             generate_reports(findings, meta, config)
             logger.error("发现BLOCK级别的问题 - 提交被阻止")
@@ -126,7 +140,7 @@ def main():
             if response:
                 mode = "diff-full"
                 logger.info("开始全文审查")
-                findings.extend(run_full_file_review(scan_results["file_diffs"], rules, ai_client))
+                findings.extend(run_full_file_review(scan_results["file_diffs"], rules, ai_client, project_key))
 
         except Exception as e:
             logger.warning(f"无法显示GUI提示或处理全文审查: {e}")
@@ -138,7 +152,7 @@ def main():
             "timestamp": datetime.datetime.now().isoformat(),
             "mode": mode,
             "file_count": len(file_diffs),
-            "has_block_issues": False
+            "has_block_issues": False,
         }
 
         report_paths = generate_reports(findings, meta, config)
@@ -153,10 +167,15 @@ def main():
         logger.error(f"代码审查过程中的致命错误: {e}")
         return 1
 
-def run_full_file_review(file_diffs, rules, ai_client):
+
+def run_full_file_review(file_diffs, rules, ai_client, project_key=None):
     """对所有修改过的文件运行全文审查"""
     findings = []
     logger.info(f"开始对 {len(file_diffs)} 个文件进行全文审查")
+    # 根据项目获取提示词模板
+    diff_template_name, full_template_name = get_project_prompts(project_key)
+    logger.info(f"使用AI提示词模板: diff={diff_template_name}, full={full_template_name}")
+
     for idx, file_diff in enumerate(file_diffs, 1):
         logger.info(f"[{idx}/{len(file_diffs)}] 审查文件: {file_diff.file_path}")
         # 读取完整文件内容
@@ -187,10 +206,9 @@ def run_full_file_review(file_diffs, rules, ai_client):
         # 如果已配置，运行AI审查
         if ai_client:
             try:
-                from src.ai_reviewer.prompt_templates import load_prompt_template
                 logger.info(f"[{idx}/{len(file_diffs)}] 正在AI审查: {file_diff.file_path}")
-                prompt_template = load_prompt_template("java_full_review")
-                ai_result = ai_client.review_full_file(file_diff.file_path, file_content, prompt_template)
+                prompt_content = load_prompt_content(full_template_name)
+                ai_result = ai_client.review_full_file(file_diff.file_path, file_content, prompt_content)
                 if ai_result.success and ai_result.findings:
                     ai_findings = ai_result.findings
                     findings.extend(ai_findings)
