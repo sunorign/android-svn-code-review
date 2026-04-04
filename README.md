@@ -6,29 +6,32 @@ SuperPower Code Review 是一款专为 **Android 客户端开发人员** 设计�
 
 这是一个客户端工具，支持**本地静态规则检查**和**AI 辅助审查**双重机制，提供用户友好的图形化界面，无需复杂配置，开箱即用。
 
+团队维护多个 POS 项目（收单/收银台/MIS/MTMS），支持按项目加载规则，只检查你当前项目需要的规则。
+
 ## 核心特点
 
 - **自动化审查流程**：支持 GUI 图形化操作，双击即可启动
+- **项目级配置**：每个项目可以配置只加载需要的规则和 AI 提示词
 - **双重审查机制**：结合本地静态规则检查和 AI 智能分析
 - **智能过滤**：自动忽略 build/、generated/ 等自动生成目录
 - **用户友好**：图形化界面选择项目目录，一键开始审查
 - **统一表格格式报告**：支持文本、HTML 和 JSON 三种格式，均采用五列统一表格布局
-- **易于扩展**：模块化架构，支持新增本地规则和 AI 提供商
+- **易于扩展**：模块化架构，方便 Android 开发也能轻松新增规则
 
 ## 功能特性
 
 ### 本地静态规则检查
 
-内置多种 Android 开发常用规则：
+内置多种 Android 开发常用规则，按通用规则和项目规则分层管理：
 
-#### Java 规则
+#### 通用 Java 规则 (存放在 `src/local_rules/common_rules/`
 - **[BLOCK] Java-DebugLogging**：检查 `System.out.println` 和 `Log.d` 等调试日志
 - **[BLOCK] Java-HardcodedSecrets**：检测密码、密钥、API Key 等敏感信息
 - **[WARNING] Java-UnclosedResources**：检查未关闭的 `Cursor`、`Stream`、`Connection`、`FileInputStream`
 - **[WARNING] Java-NPERisk**：识别可能的空指针异常风险（未判空直接调用方法）
 - **[WARNING] Java-MemoryLeak**：检测非静态内部类可能造成的内存泄漏
 
-#### Android 规则
+#### 通用 Android 规则
 - **[WARNING] Android-HardcodedUrls**：检查硬编码的 IP 地址或 URL（应放在配置文件中）
 - **[WARNING] Android-ViewHolderPattern**：检查 ViewHolder 模式的正确使用
 - **[BLOCK] Android-BinaryFiles**：阻止提交 `.apk`、`.dex` 等二进制文件
@@ -36,13 +39,60 @@ SuperPower Code Review 是一款专为 **Android 客户端开发人员** 设计�
 #### Kotlin 规则
 - 预留架构，支持扩展
 
+#### POS 项目特有规则
+每个项目放在 `src/local_rules/pos_project_rules/项目名称/`，你可以添加项目特有的业务规范规则。
+
 ### AI 辅助审查
 
 支持多种 AI 服务提供商：
 
 - **Anthropic Claude API**：原生支持
-- **OpenRouter**：支持调用多种模型
+- **OpenRouter**：支持调用多种模型（预配置可用 API key，开箱即用
 - **Local Ollama**：本地部署大模型（骨架预留）
+
+AI 提示词也支持按项目配置，每个项目可以定义自己特有的审查要点。
+
+## 目录结构说明
+
+```
+src/local_rules/                # 本地规则根目录
+├── base_rule.py               # 所有规则的抽象基类（不用改）
+├── common_rules/             # 通用规则池 - 所有项目共享
+│   ├── java_rule_*.py        # Java 语言规则 → 文件名前缀 java_rule_ 一眼识别
+│   ├── android_rule_*.py     # Android 框架规则 → 文件名前缀 android_rule_
+│   └── kotlin_rule_*.py      # Kotlin 语言规则 → 文件名前缀 kotlin_rule_
+└── pos_project_rules/         # POS 各项目特有规则 → 每个项目一个子目录
+    ├── payment/              # 收单软件
+    │   ├── __init__.py      # ← 这里配置 ENABLED_RULES 列出本项目启用哪些规则
+    │   └── payment_*.py      # 收单项目特有规则
+    ├── cashier/              # 收银台软件
+    ├── mis/                 # MIS 通道软件
+    └── mtms/                # MTMS 设备管理软件
+
+src/ai_reviewer/
+└── prompt_templates/        # AI 提示词 - 目录结构完全对齐 local_rules
+    ├── common/              # 通用提示词
+    │   ├── diff-review.md    # 默认增量审查提示词
+    │   └── full-review.md  # 默认全量审查提示词
+    └── pos_projects/        # 各项目提示词 - 目录名完全对应 local_rules
+        ├── payment/
+        │   ├── __init__.py  # ← ENABLED_PROMPTS 列出本项目启用哪些提示词
+        │   └── *.md          # 每个提示词单独一个文件
+        ├── cashier/
+        ├── mis/
+        └── mtms/
+```
+
+**文件名命名规范：**
+| 类型 | 前缀 | 示例
+|------|------|------
+| Java 语言规则 | `java_rule_` | `java_rule_debug_logging.py`
+| Android 框架规则 | `android_rule_` | `android_rule_hardcoded_urls.py`
+| Kotlin 语言规则 | `kotlin_rule_` | `kotlin_rule_null_safety.py`
+| 收单项目规则 | `payment_` | `payment_sensitive_keys.py`
+| 收银台项目规则 | `cashier_` | `cashier_ui_standard.py`
+| MIS 项目规则 | `mis_` | `mis_serial_port.py`
+| MTMS 项目规则 | `mtms_` | `mtms_version_check.py`
 
 ## 环境要求
 
@@ -84,24 +134,25 @@ requests>=2.28.0
 ### GUI 方式（推荐，简单易用）
 
 1. **启动工具**：双击项目根目录下的 `start-gui.bat` 文件
-2. **选择项目**：在弹出的对话框中，选择您的 Android 项目根目录
-3. **开始审查**：点击"开始代码审查"按钮
-4. **查看报告**：等待审查完成，工具会自动在浏览器中打开 HTML 报告
+2. **选择项目类型**：下拉框选择你的项目（默认选中收单软件
+3. **选择项目目录**：在弹出的对话框中，选择您的 Android 项目根目录
+4. **开始审查**：点击"开始代码审查"按钮
+5. **查看报告**：等待审查完成，工具会自动在浏览器中打开 HTML 报告
 
-### 命令行方式（高级用法）
+### 命令行方式（高级用法，用于 SVN 钩子）
 
-工具也支持通过命令行手动运行：
+工具也支持通过命令行手动运行，支持 `--project` 参数指定项目：
 
 ```bash
 cd D:/Documents/Projects/superpower-code-review
-python src/main.py
+python src/main.py --project payment
 ```
 
 #### 示例：手动测试审查功能
 
 ```bash
-cd D:/AndroidProjects/MyApp
-python D:/Documents/Projects/superpower-code-review/src/main.py
+cd D:/AndroidProjects/PaymentApp
+python D:/Documents/Projects/superpower-code-review/src/main.py --project payment
 ```
 
 ## 审查规则说明
@@ -110,9 +161,8 @@ python D:/Documents/Projects/superpower-code-review/src/main.py
 
 | 级别 | 说明 | 对提交影响 |
 |------|------|------------|
-| 严重 | 严重问题（严重 bug、安全漏洞、内存泄露等） | 阻止提交，需立即修复 |
-| 一般 | 一般问题（超时处理不足、代码不规范等） | 不阻止，但建议修复 |
-| 轻微 | 轻微问题（代码风格、优化建议等） | 不阻止，可以后续修复 |
+| BLOCK | 严重问题（严重 bug、安全漏洞、内存泄露等） | 阻止提交，需立即修复 |
+| WARNING | 一般问题（超时处理不足、代码不规范等） | 不阻止，但建议修复 |
 
 ### 默认忽略目录
 
@@ -127,9 +177,111 @@ python D:/Documents/Projects/superpower-code-review/src/main.py
 - 工具**不**对这些文件进行代码质量审查
 - 但会在报告中添加明确的提醒，要求提交者在提交日志中说明变更原因
 
-### 规则扩展
+## 给 Android 开发扩展指南
 
-如果需要添加自定义规则，请参考 [扩展开发指南](#扩展开发指南) 章节。
+### 如何新增一条本地规则
+
+**你只需要会写一个 Python 文件，非常简单：**
+
+#### 步骤 1：新建文件
+
+- 如果是**通用规则** → 在 `src/local_rules/common_rules/` 按命名规范新建文件
+- 如果是**项目特有规则** → 在 `src/local_rules/pos_project_rules/你的项目/` 新建文件
+
+#### 步骤 2：复制模板写代码
+
+复制现有规则文件，替换内容，只需要改：
+
+```python
+"""
+一句话说明这个规则检查什么
+"""
+import re
+from typing import List
+
+from src.local_rules.base_rule import BaseRule, RuleFinding
+from src.diff_parser import DiffChange, FileDiff
+
+# 这里写你的匹配模式
+
+class YourRuleName(BaseRule):
+
+    @property
+    def name(self) -> str:
+        return "Java-YourRuleName"  # ← 报告中显示的规则名称
+
+    @property
+    def description(self) -> str:
+        return "一句话说明这个规则检查什么"
+
+    def check_diff(self, file_diff: FileDiff, change: DiffChange) -> List[RuleFinding]:
+        findings = []
+        # 你的检查逻辑 → 对本次变更的每一行检查
+        # 发现问题就 add RuleFinding
+        return findings
+
+    def check_full_file(self, file_path: str, content: str) -> List[RuleFinding]:
+        findings = []
+        # 你的检查逻辑 → 对整个文件逐行检查
+        # 发现问题就 add RuleFinding
+        return findings
+```
+
+**RuleFinding 构造参数：**
+```python
+RuleFinding(
+    file_path=file_diff.file_path,        # 文件路径
+    line_number=change.line_number,       # 问题行号
+    rule_name=self.name,                 # 规则名称
+    message="问题描述说明",              # 问题描述
+    severity="BLOCK",                  # BLOCK 或 WARNING
+    code_snippet=content.strip()      # 问题代码片段（显示用）
+)
+```
+
+**基类已经给你提供了帮助方法，直接用：
+
+```python
+# 判断这行是不是注释 → 返回 True/False
+self._is_line_comment(content)
+
+# 判断匹配到的内容是不是在字符串字面量里面 → 返回 True/False
+self._is_pattern_in_string(line, match_start, match_end)
+
+# 从内容中移除注释 → 返回移除注释后的内容
+self._remove_comments(content)
+```
+
+#### 步骤 3：在项目配置中添加你的规则
+
+打开 `src/local_rules/pos_project_rules/你的项目/__init__.py`，导入你的规则，加到 `ENABLED_RULES` 列表：
+
+```python
+# ... 其他导入 ...
+from src.local_rules.pos_project_rules.your_project.your_rule_file import YourRuleClass
+
+ENABLED_RULES = [
+    # ... 其他规则 ...
+    YourRuleClass(),  # ← 新增你的规则实例
+]
+```
+
+搞定！下次启动工具就会加载你的规则了。
+
+### 如何新增项目自定义 AI 提示词
+
+1. 在 `src/ai_reviewer/prompt_templates/pos_projects/你的项目/` 新建 `.md` 文件
+   - 文件名包含 `diff` → 自动识别为增量审查提示词
+   - 文件名包含 `full` → 自动识别为全量审查提示词
+   - 都不包含 → 默认按全量处理
+2. 在同一个目录下的 `__init__.py` 把文件名加到 `ENABLED_PROMPTS` 列表：
+   ```python
+   ENABLED_PROMPTS = [
+       "your-prompt-diff.md",
+       "your-prompt-full.md",
+   ]
+   ```
+3. 完成！工具会自动识别加载。
 
 ## 报告格式说明
 
@@ -147,16 +299,11 @@ python D:/Documents/Projects/superpower-code-review/src/main.py
 
 - Markdown 表格格式，适合在终端直接查看
 - 使用标准 Markdown 语法，便于复制和分享
-- 可在支持 Markdown 的编辑器中渲染为表格
-- 格式简洁，信息密度高
 
 ### HTML 报告 (html)
 
 - 响应式 Bootstrap 表格样式
-- 优先级使用不同颜色标识：
-  - 严重：红色背景
-  - 一般：黄色背景
-  - 轻微：蓝色背景
+- 优先级使用不同颜色标识：严重红色，一般黄色，轻微蓝色
 - 支持响应式布局，在不同设备上都有良好的显示效果
 - 便于分享和查看
 
@@ -166,202 +313,6 @@ python D:/Documents/Projects/superpower-code-review/src/main.py
 - 包含所有审查信息的详细数据
 - 适合与其他工具集成（如 CI/CD 系统）
 - 便于自动化处理和分析
-- JSON 结构示例：
-  ```json
-  {
-    "generated": "2026-03-27T14:27:15Z",
-    "mode": "full-review",
-    "file_count": 15,
-    "findings": [
-      {
-        "优先级": "严重",
-        "问题类型": "内存泄露",
-        "位置": "MainActivity.java:120",
-        "说明": "Handler 持有外部类引用",
-        "修复建议": "使用静态内部类 + WeakReference"
-      }
-    ]
-  }
-  ```
-
-## 扩展开发指南
-
-### 新增本地静态规则
-
-1. 在 `src/local_rules/` 目录下选择或创建合适的子目录（如 `java_rules/` 或 `android_rules/`）
-2. 创建新的规则类，继承自 `BaseRule` 基类
-3. 实现 `check_diff` 和 `check_full_file` 方法
-4. 在该目录的 `__init__.py` 文件中导出新规则
-
-#### 示例：新增 Java 规则
-
-```python
-# src/local_rules/java_rules/custom_rule.py
-from src.local_rules.base_rule import BaseRule, RuleFinding
-from src.diff_parser import DiffChange, FileDiff
-
-class CustomRule(BaseRule):
-    name = "CustomRule"
-    description = "自定义规则示例"
-
-    def check_diff(self, file_diff: FileDiff, change: DiffChange) -> list[RuleFinding]:
-        findings = []
-        # 实现增量检查逻辑
-        # 示例：检查是否包含特定字符串
-        if "TODO: 待完成" in change.content:
-            findings.append(RuleFinding(
-                file_path=file_diff.file_path,
-                line_number=change.line_number,
-                rule_name=self.name,
-                message="发现未完成的 TODO 标记",
-                severity="WARNING",
-                code_snippet=change.content
-            ))
-        return findings
-
-    def check_full_file(self, file_path: str, content: str) -> list[RuleFinding]:
-        findings = []
-        # 实现全文检查逻辑
-        return findings
-```
-
-然后在 `src/local_rules/java_rules/__init__.py` 中导出：
-
-```python
-from .debug_logging import DebugLoggingRule
-from .hardcoded_secrets import HardcodedSecretsRule
-from .unclosed_resources import UnclosedResourcesRule
-from .npe_risk import NPERiskRule
-from .memory_leak import MemoryLeakRule
-from .custom_rule import CustomRule  # 新增
-
-JAVARULES = [
-    DebugLoggingRule(),
-    HardcodedSecretsRule(),
-    UnclosedResourcesRule(),
-    NPERiskRule(),
-    MemoryLeakRule(),
-    CustomRule(),  # 新增
-]
-```
-
-### 新增 AI 提供商支持
-
-1. 在 `src/ai_reviewer/` 目录下创建新的客户端类
-2. 继承自 `BaseClient` 基类
-3. 实现 `review_code` 方法
-4. 在 `src/ai_reviewer/__init__.py` 中更新工厂函数
-
-#### 示例：新增自定义 AI 客户端
-
-```python
-# src/ai_reviewer/custom_ai_client.py
-from src.ai_reviewer.base_client import BaseAIClient
-from src.ai_reviewer.prompt_templates import load_prompt_template
-
-class CustomAIClient(BaseAIClient):
-    def __init__(self, config):
-        super().__init__(config)
-        self.api_key = config.custom_api_key
-
-    def review_diff(self, file_path: str, diff_content: str, prompt_template: str) -> AIReviewResult:
-        # 实现增量审查逻辑
-        prompt = load_prompt_template(prompt_template).format(
-            file_path=file_path,
-            file_content=diff_content
-        )
-
-        # 调用自定义 AI API
-        response = self._call_api(prompt)
-
-        # 解析 AI 响应并返回 findings
-        return self._parse_response(response)
-
-    def review_full_file(self, file_path: str, content: str, prompt_template: str) -> AIReviewResult:
-        # 实现全文审查逻辑
-        prompt = load_prompt_template(prompt_template).format(
-            file_path=file_path,
-            file_content=content
-        )
-
-        # 调用自定义 AI API
-        response = self._call_api(prompt)
-
-        # 解析 AI 响应并返回 findings
-        return self._parse_response(response)
-```
-
-然后在 `src/ai_reviewer/__init__.py` 中更新：
-
-```python
-from src.ai_reviewer.claude_client import ClaudeClient
-from src.ai_reviewer.openrouter_client import OpenRouterClient
-from src.ai_reviewer.local_ollama_client import LocalOllamaClient
-from src.ai_reviewer.custom_ai_client import CustomAIClient  # 新增
-
-def get_ai_client(config: Config) -> Optional[BaseAIClient]:
-    """Factory method to get the configured AI client."""
-    provider = config.get_active_provider()
-    if not provider:
-        return None
-
-    match provider:
-        case 'claude':
-            return ClaudeClient(config)
-        case 'openrouter':
-            return OpenRouterClient(config)
-        case 'ollama':
-            return LocalOllamaClient(config)
-        case 'custom':
-            return CustomAIClient(config)
-        case _:
-            logger.warning(f"Unknown AI provider: {provider}")
-            return None
-```
-
-### 修改 AI 提示词模板
-
-提示词模板位于 `src/ai_reviewer/prompt_templates/` 目录下，以 Markdown 格式存储。您可以根据需要修改这些模板。
-
-#### 提示词模板示例
-
-```markdown
-# Java 代码审查
-
-请帮我审查以下 Java 代码：
-
-## 文件信息
-- 文件路径：{file_path}
-
-## 代码内容
-```java
-{file_content}
-```
-
-## 审查要求
-
-1. 检查代码中的语法错误
-2. 检查潜在的运行时错误（如空指针异常）
-3. 检查代码的安全性问题
-4. 检查代码的性能问题
-5. 检查代码的可维护性
-6. 提供优化建议
-
-## 输出格式
-
-请以 JSON 格式返回审查结果，结构如下：
-
-```json
-[
-    {
-        "file_path": "{file_path}",
-        "line_number": 10,
-        "rule_name": "语法错误",
-        "description": "缺少分号",
-        "severity": "BLOCK"
-    }
-]
-```
 
 ## 常见问题
 
@@ -378,7 +329,7 @@ def get_ai_client(config: Config) -> Optional[BaseAIClient]:
 
 **A**: 检查以下内容：
 
-1. 确保已配置正确的环境变量
+1. 确保已配置正确的 API 密钥
 2. 检查 API 密钥是否有效
 3. 检查网络连接是否正常
 4. 查看日志文件（`code_review_YYYYMMDD_HHMMSS.log`）获取详细错误信息
@@ -430,7 +381,7 @@ DEFAULT_IGNORE_PATTERNS = [
     '*/generated/',
     '.git/',
     '.svn/',
-    'my_custom_directory/',  # 新增忽略规则
+    'my_custom_directory/',  # ← 新增忽略规则
     '*/my_custom_directory/',
 ]
 ```
@@ -451,7 +402,7 @@ DEFAULT_IGNORE_PATTERNS = [
 
 ```batch
 @echo off
-D:/Python39/python.exe D:/Documents/Projects/superpower-code-review/src/main.py
+D:/Python39/python.exe D:/Documents/Projects/superpower-code-review/src/main.py --project payment
 if %errorlevel% neq 0 (
     echo.
     echo 代码审查失败，请查看审查报告
@@ -460,7 +411,7 @@ if %errorlevel% neq 0 (
 exit /b 0
 ```
 
-**注意**：请根据您的实际 Python 安装路径和项目路径进行修改。
+**注意**：请根据您的实际 Python 安装路径和项目路径进行修改，`--project` 参数指定你的项目。
 
 ### 验证安装
 
@@ -475,14 +426,12 @@ exit /b 0
 所有配置都通过环境变量进行管理，无需修改代码。
 
 #### 通用配置
-
 ```
 API_TIMEOUT=60                  # API 超时时间（秒）
 AI_REVIEW_PROVIDER=claude       # 可选：claude/openrouter/ollama
 ```
 
 #### Claude API 配置
-
 ```
 ANTHROPIC_API_KEY=your_api_key   # 您的 Claude API 密钥
 ANTHROPIC_API_URL=https://api.anthropic.com/v1  # API 地址
@@ -491,7 +440,6 @@ ANTHROPIC_MAX_TOKENS=4096       # 最大 token 数
 ```
 
 #### OpenRouter 配置
-
 ```
 OPENROUTER_API_KEY=your_api_key  # 您的 OpenRouter API 密钥
 OPENROUTER_API_URL=https://openrouter.ai/api/v1  # API 地址
@@ -500,7 +448,6 @@ OPENROUTER_MAX_TOKENS=4096      # 最大 token 数
 ```
 
 #### Local Ollama 配置
-
 ```
 OLLAMA_API_BASE=http://localhost:11434  # Ollama 服务地址
 OLLAMA_MODEL=llama2                # 模型名称
@@ -512,21 +459,3 @@ OLLAMA_MAX_TOKENS=4096            # 最大 token 数
 1. 右键点击"此电脑" -> 属性 -> 高级系统设置 -> 环境变量
 2. 在系统变量中添加或修改上述环境变量
 3. 重新启动 SVN 客户端或命令行窗口使配置生效
-
-### SVN 钩子使用示例
-
-#### 示例 1：正常使用（作为 SVN 钩子）
-
-1. 在 Android 项目中修改代码
-2. 右键点击项目 -> TortoiseSVN -> 提交
-3. 工具自动运行，显示审查进度
-4. 如果有问题，会显示阻止提交的信息
-5. 查看 `code-review-output` 目录下的审查报告
-
-#### 示例 2：查看审查报告
-
-审查报告生成在项目根目录的 `code-review-output/` 目录下，包含以下文件：
-
-- `review-result-YYYYMMDD-HHMMSS.txt` - 纯文本报告（适合终端查看）
-- `review-result-YYYYMMDD-HHMMSS.html` - 格式化 HTML 报告（带语法高亮）
-- `review-result-YYYYMMDD-HHMMSS.json` - 结构化 JSON 报告（适合工具集成）
