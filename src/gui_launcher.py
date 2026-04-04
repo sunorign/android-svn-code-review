@@ -8,6 +8,7 @@ import tkinter
 from tkinter import filedialog, messagebox, ttk
 import webbrowser
 import logging
+import argparse
 
 # 添加项目根目录到路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,11 +20,23 @@ class CodeReviewGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("SuperPower Code Review")
-        self.root.geometry("500x280")
+        self.root.geometry("500x320")
         self.root.resizable(False, False)
 
         # 选中的项目目录
         self.project_dir = tkinter.StringVar()
+        # 选中的项目类型
+        self.project_display = tkinter.StringVar()
+
+        # 项目 key 和 display name 的映射
+        from src.local_rules import list_available_projects
+        self.available_projects = list_available_projects()
+        self.display_to_key = {disp: key for key, disp in self.available_projects}
+        self.display_names = [disp for key, disp in self.available_projects]
+
+        # 默认选中第一个（通常是收单软件）
+        if self.display_names:
+            self.project_display.set(self.display_names[0])
 
         self.create_widgets()
 
@@ -42,6 +55,15 @@ class CodeReviewGUI:
         )
         subtitle.pack(pady=(0, 20))
 
+        # 项目类型选择
+        frame0 = ttk.Frame(self.root)
+        frame0.pack(fill='x', padx=20, pady=5)
+
+        ttk.Label(frame0, text="项目类型:").pack(anchor='w')
+
+        combo = ttk.Combobox(frame0, textvariable=self.project_display, values=self.display_names, state='readonly')
+        combo.pack(fill='x', pady=5)
+
         # 项目目录选择
         frame1 = ttk.Frame(self.root)
         frame1.pack(fill='x', padx=20, pady=5)
@@ -57,7 +79,6 @@ class CodeReviewGUI:
         browse_btn = ttk.Button(dir_frame, text="浏览...", command=self.browse_dir)
         browse_btn.pack(side='right')
 
-
         # 开始按钮
         start_btn = ttk.Button(
             self.root,
@@ -68,7 +89,7 @@ class CodeReviewGUI:
         start_btn.pack(pady=20, fill='x', padx=20)
 
         # 状态栏
-        self.status = ttk.Label(self.root, text="就绪，请选择项目目录", foreground='gray')
+        self.status = ttk.Label(self.root, text="就绪，请选择项目类型和项目目录", foreground='gray')
         self.status.pack(pady=(0, 10))
 
     def browse_dir(self):
@@ -90,6 +111,10 @@ class CodeReviewGUI:
             messagebox.showerror("错误", "请选择有效的项目目录")
             return
 
+        if not self.display_names:
+            messagebox.showerror("错误", "没有可用的项目配置")
+            return
+
         if not self.check_svn(directory):
             result = messagebox.askyesno(
                 "警告",
@@ -101,14 +126,19 @@ class CodeReviewGUI:
         self.status.config(text="正在运行代码审查...")
         self.root.update()
 
-        # 运行主程序
+        # 获取选中的项目 key
+        display_name = self.project_display.get()
+        project_key = self.display_to_key[display_name]
+
+        # 运行主程序，传递项目参数
         try:
             # 切换工作目录
             os.chdir(directory)
 
             # 导入并运行main
-            from src.main import main
-            main()
+            import src.main
+            sys.argv = [sys.argv[0], '--project', project_key]
+            result = src.main.main()
 
             # 查找最新生成的HTML报告
             report_dir = os.path.join(directory, 'code-review-output')
