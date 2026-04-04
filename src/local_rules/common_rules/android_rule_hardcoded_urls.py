@@ -45,15 +45,16 @@ class HardcodedUrlsRule(BaseRule):
 
         match = HARDCODED_URL_PATTERN.search(line_full)
         if match:
-            if not self._is_pattern_in_string(line_full, match.start(), match.end()):
-                findings.append(RuleFinding(
-                    file_path=file_diff.file_path,
-                    line_number=change.line_number,
-                    rule_name=self.name,
-                    message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
-                    severity="WARNING",
-                    code_snippet=content
-                ))
+            # URL 本来就应该在字符串字面量中，我们就是要检测字符串中的硬编码 URL
+            # 所以不需要检查 _is_pattern_in_string
+            findings.append(RuleFinding(
+                file_path=file_diff.file_path,
+                line_number=change.line_number,
+                rule_name=self.name,
+                message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
+                severity="WARNING",
+                code_snippet=content
+            ))
 
         return findings
 
@@ -88,14 +89,15 @@ class HardcodedUrlsRule(BaseRule):
 
             match = HARDCODED_URL_PATTERN.search(current_line)
             if match:
-                if not self._is_pattern_in_string(current_line, match.start(), match.end()):
-                    findings.append(RuleFinding(
-                        file_path=file_path,
-                        line_number=i,
-                        rule_name=self.name,
-                        message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
-                        severity="WARNING",
-                        code_snippet=line_stripped
-                    ))
+                # URL 本来就应该在字符串字面量中，我们就是要检测字符串中的硬编码 URL
+                # 所以不需要检查 _is_pattern_in_string
+                findings.append(RuleFinding(
+                    file_path=file_path,
+                    line_number=i,
+                    rule_name=self.name,
+                    message=f"发现硬编码URL/IP: `{match.group()}` - 应放在配置文件中",
+                    severity="WARNING",
+                    code_snippet=line_stripped
+                ))
 
         return findings

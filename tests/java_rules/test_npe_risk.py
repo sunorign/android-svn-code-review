@@ -1,4 +1,4 @@
-from src.local_rules.java_rules.npe_risk import NPERiskRule
+from src.local_rules.common_rules.java_rule_npe_risk import NPERiskRule
 from src.diff_parser import FileDiff, DiffChange
 
 

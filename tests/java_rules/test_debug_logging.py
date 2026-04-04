@@ -1,4 +1,4 @@
-from src.local_rules.java_rules.debug_logging import DebugLoggingRule
+from src.local_rules.common_rules.java_rule_debug_logging import DebugLoggingRule
 from src.diff_parser import FileDiff, DiffChange
 
 

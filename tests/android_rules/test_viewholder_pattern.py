@@ -1,4 +1,4 @@
-from src.local_rules.android_rules.viewholder_pattern import ViewHolderPatternRule
+from src.local_rules.common_rules.android_rule_viewholder_pattern import ViewHolderPatternRule
 from src.diff_parser import FileDiff, DiffChange
 
 

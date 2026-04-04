@@ -1,4 +1,4 @@
-from src.local_rules.java_rules.memory_leak import MemoryLeakRule
+from src.local_rules.common_rules.java_rule_memory_leak import MemoryLeakRule
 from src.diff_parser import FileDiff, DiffChange
 
 

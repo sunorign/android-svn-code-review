@@ -1,4 +1,4 @@
-from src.local_rules.java_rules.unclosed_resources import UnclosedResourcesRule
+from src.local_rules.common_rules.java_rule_unclosed_resources import UnclosedResourcesRule
 from src.diff_parser import FileDiff, DiffChange
 
 

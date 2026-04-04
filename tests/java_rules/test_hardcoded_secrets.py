@@ -1,4 +1,4 @@
-from src.local_rules.java_rules.hardcoded_secrets import HardcodedSecretsRule
+from src.local_rules.common_rules.java_rule_hardcoded_secrets import HardcodedSecretsRule
 from src.diff_parser import FileDiff, DiffChange
 
 

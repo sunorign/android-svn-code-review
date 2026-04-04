@@ -1,4 +1,4 @@
-from src.local_rules.android_rules.hardcoded_urls import HardcodedUrlsRule
+from src.local_rules.common_rules.android_rule_hardcoded_urls import HardcodedUrlsRule
 from src.diff_parser import FileDiff, DiffChange
 
 

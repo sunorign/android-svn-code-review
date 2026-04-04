@@ -1,4 +1,4 @@
-from src.local_rules.android_rules.binary_files import BinaryFilesRule
+from src.local_rules.common_rules.android_rule_binary_files import BinaryFilesRule
 from src.diff_parser import FileDiff, DiffChange
 
 
