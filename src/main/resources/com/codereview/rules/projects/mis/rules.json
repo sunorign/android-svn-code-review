@@ -1,0 +1,12 @@
+{
+  "enabledRules": [
+    "com.codereview.rules.common.java.JavaDebugLoggingRule",
+    "com.codereview.rules.common.java.JavaHardcodedSecretsRule",
+    "com.codereview.rules.common.java.JavaUnclosedResourcesRule",
+    "com.codereview.rules.common.java.JavaNpeRiskRule",
+    "com.codereview.rules.common.java.JavaMemoryLeakRule",
+    "com.codereview.rules.common.android.AndroidHardcodedUrlsRule",
+    "com.codereview.rules.common.android.AndroidViewHolderPatternRule",
+    "com.codereview.rules.common.android.AndroidBinaryFilesRule"
+  ]
+}

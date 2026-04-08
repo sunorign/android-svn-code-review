@@ -1,0 +1,49 @@
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Compose Desktop packaged outputs
+*.exe
+*.msi
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+jpackage/
+
+# Logs
+*.log
+
+# Local configuration
+local.properties
+*.local.properties
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.bak
+*.diff
+*.orig
+
+# Jars
+*.jar
+
+# Class files
+*.class

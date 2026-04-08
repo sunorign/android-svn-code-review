@@ -1,0 +1,10 @@
+{
+  "provider": "openrouter",
+  "apiKey": "your-api-key-here",
+  "apiUrl": "https://openrouter.ai/api/v1/chat/completions",
+  "model": "openai/gpt-4-turbo-preview",
+  "maxTokens": 4096,
+  "timeoutSeconds": 60,
+  "aiEnabled": true,
+  "localEnabled": true
+}
