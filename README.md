@@ -8,18 +8,18 @@ Code Review 是一款专为 **Android 客户端开发人员** 设计的自动化
 
 这是 Kotlin 版本，使用 Gradle 构建，可以直接打包成 Windows `.exe` 可执行文件，开箱即用。
 
-- 支持**本地静态规则检查**和 **AI 辅助审查** 双重机制，可灵活切换是否启用 AI
-- 提供用户友好的**图形化界面**，无需复杂配置
-- **按项目分类管理**规则和 AI 提示词，只检查当前项目需要的规则
+- 支持**本地静态规则检查**和 **AI 辅助审查** 双重机制，可独立开关控制
+- 提供用户友好的**图形化界面**，所有设置均可在界面中完成，无需手动编辑配置文件
+- **可视化规则管理**：在 GUI 中可勾选启用/禁用单个本地规则，只检查你需要的规则
 - 支持三种扫描模式：全局扫描全量代码、SVN Diff 扫描变更文件、Git Diff 扫描变更文件
+- Diff 模式支持两种粒度：整个文件扫描 / 仅扫描变更行
 - Diff 模式仅扫描修改过的文件，扫描速度更快
-- 支持 GUI 双击启动，也支持 **CLI 命令行** 集成到 SVN/Git 钩子
-- 生成**HTML 简洁报告**（用于快速查看）和 **纯文本完整日志**（用于存档分享）
-- 不再生成 TXT 和 JSON 格式的报告
+- 支持 GUI 双击启动，也支持 **CLI 命令行** 集成到 SVN/Git pre-commit 钩子
+- 生成 **HTML 简洁报告**（用于浏览器快速查看）和 **Markdown 完整报告**（用于存档分享）
+- 支持多种 AI 服务提供商：Anthropic Claude API、OpenRouter、本地 Ollama
 - 改进的 AI 解析算法，使用标签包裹格式，大幅提高解析成功率
 - 支持 `alwaysDisplay` 固定显示规则，即使未发现问题也会在报告中展示为绿色 PASS
-- 修复提示词覆盖问题，AI 更容易记住输出格式要求
-- 在日志中记录分析文件列表，方便追踪调试
+- 所有设置持久化保存，重启后自动恢复
 
 ## 功能特性
 
@@ -43,6 +43,12 @@ Code Review 提供三种扫描模式，以满足不同场景的需求：
 - 扫描速度快，适合日常开发中的增量代码审查
 
 > **提示**：Diff 模式（SVN 或 Git）只检查变更文件，相比全局扫描速度显著提升，是日常开发的推荐使用方式。
+
+#### Diff 粒度
+
+Diff 模式支持两种扫描粒度：
+- **整个文件**：对变更文件进行完整扫描，检查更全面
+- **仅变更行**：只扫描被修改的代码行，扫描速度更快
 
 ### 本地静态规则检查
 
@@ -80,8 +86,6 @@ Code Review 提供三种扫描模式，以满足不同场景的需求：
 - **OpenRouter** - 支持调用多种模型
 - **Local Ollama** - 本地部署大模型
 
-AI 提示词支持**按项目配置**，每个项目可以定义自己特有的审查要点。
-
 改进的 AI 解析机制：
 - 使用 `<findings>...</findings>` 标签包裹结果，AI 可在外部自由输出分析过程
 - 解析容错性更强，个别问题格式错误不影响整体结果
@@ -106,29 +110,27 @@ AI 提示词支持**按项目配置**，每个项目可以定义自己特有的�
 
 ```
 code_review_kotlin_version/
-├── gradle/                     # Gradle wrapper
+├── gradle/                               # Gradle wrapper
 ├── src/
 │   └── main/
-│       ├── kotlin/
-│       │   └── com/codereview/
-│       │       ├── main/          # 主入口
-│       │       ├── core/          # 核心数据结构和工具
-│       │       ├── rules/         # 规则
-│       │       │   ├── common/    # 通用规则
-│       │       │   │   ├── java/   # Java 规则
-│       │       │   └── android/  # Android 规则
-│       │       ├── ai/            # AI 模块
-│       │       │   └── providers/  # AI 提供商实现
-│       │       ├── gui/           # Compose GUI 界面
-│       │       ├── cli/           # 命令行入口
-│       │       └── report/        # 报告生成
+│       ├── kotlin/com/codereview/
+│       │   ├── main/                    # 主入口（自动判断 GUI/CLI）
+│       │   ├── core/                    # 核心数据结构和扫描工具
+│       │   ├── rules/                   # 规则加载和管理
+│       │   │   ├── common/              # 通用规则
+│       │   │   │   ├── java/            # Java 通用规则
+│       │   │   │   └── android/         # Android 通用规则
+│       │   ├── ai/                      # AI 模块
+│       │   │   └── providers/           # AI 提供商实现
+│       │   ├── gui/                     # Compose 图形界面
+│       │   ├── cli/                     # 命令行入口
+│       │   └── report/                  # 报告生成
 │       └── resources/
-│           ├── ai_prompts/        # AI 提示词模板
-│           │   ├── common/
-│           │   └── projects/
-│           └── ai_config/         # 默认 AI 客户端配置
-├── build.gradle.kts            # Gradle 构建配置
-├── settings.gradle.kts         # Gradle 设置
+│           ├── ai_prompts/              # AI 提示词模板
+│           │   └── common/              # 通用提示词
+│           └── ai_config/               # AI 客户端默认配置
+├── build.gradle.kts          # Gradle 构建配置
+├── settings.gradle.kts       # Gradle 项目设置
 └── README.md
 ```
 
@@ -159,42 +161,43 @@ code_review_kotlin_version/
 
 ### GUI 方式（推荐）
 
-1. 双击 `CodeReview-1.0.0.exe` 安装
-2. 启动后选择项目类型（收单软件/收银台软件/MIS/MTMS 设备管理）
+1. 双击 `CodeReview-1.0.0.exe` 安装启动
+2. 右上角提供三个设置按钮：
+   - **扫描设置**：选择扫描模式和 Diff 粒度
+   - **本地设置**：可视化启用/禁用单个本地规则，独立开关本地规则审查
+   - **AI 设置**：配置 AI 提供商、API Key、模型参数，独立开关 AI 审查
 3. 点击 **浏览...** 选择你的 Android 项目根目录
-4. 选择扫描模式：
-   - **全局扫描**：扫描所有文件
-   - **SVN Diff 扫描**：仅扫描 SVN 变更文件
-   - **Git Diff 扫描**：仅扫描 Git 变更文件
-5. 可选：配置 AI 审查
-   - 勾选 "启用 AI 辅助审查" 复选框（默认启用）
-   - 点击 "AI 配置" 按钮可打开详细设置
-6. 点击 **开始代码审查** 按钮
-7. 审查完成后会显示扫描结果统计信息
-8. 自动打开生成的报告文件：
-   - **HTML 报告**：简洁的问题列表视图（用于快速查看）
-   - **纯文本日志**：包含完整详细信息和 AI 原始响应（用于分享或存档）
+4. 点击 **开始代码审查** 按钮
+5. 审查完成后会显示扫描结果统计信息
+6. 自动在浏览器中打开生成的 HTML 报告：
+   - **HTML 报告**：美观的问题列表视图，方便快速查看
+   - **Markdown 报告**：包含完整详细信息和 AI 调试信息，用于存档分享
+
+**扫描设置说明**：
+- **扫描模式**：全局扫描（全量代码）/ SVN Diff（仅变更文件）/ Git Diff（仅变更文件）
+- **Diff 粒度**：整个文件（扫描整个变更文件）/ 仅变更行（只扫描修改的行，速度更快）
 
 ### CLI 方式（用于 SVN/Git pre-commit 钩子）
 
 ```bash
 # 全局扫描
-CodeReview --project payment --output /path/to/output
+CodeReview --output /path/to/output
 
 # SVN Diff 模式（仅扫描变更文件）
-CodeReview --project payment --diff-mode svn
+CodeReview --diff-mode svn
 
 # Git Diff 模式（仅扫描变更文件）
-CodeReview --project payment --diff-mode git
+CodeReview --diff-mode git
 
 # 禁用 AI 审查，仅执行本地静态规则检查
-CodeReview --project payment --diff-mode git --no-ai
+CodeReview --diff-mode git --no-ai
 ```
 
+> **说明**：`--project` 参数保留但已不再使用，规则启用状态统一从本地设置加载
+
 输出格式说明：
-- 生成 **HTML 简洁报告**：用于快速查看扫描结果
-- 生成 **纯文本日志 (.log)**：包含所有问题的详细信息和 AI 原始响应（不做转义保持原样）
-- 不再生成 TXT、JSON 和 Markdown 格式的报告
+- 生成 **HTML 简洁报告**：美观的问题列表视图，直接在浏览器中打开查看
+- 生成 **Markdown 完整报告**：包含所有问题的详细信息和 AI 调试信息，便于存档分享
 
 ## AI 配置
 
@@ -241,17 +244,8 @@ CodeReview --project payment --diff-mode git --no-ai
    这样无论是否发现问题，规则都会在 HTML 报告中展示：
    - 发现问题时正常显示问题
    - 未发现问题时显示绿色 PASS 行"未发现问题 ✓"
-4. 在对应项目的 `rules.json` 中添加规则全类名
 
-```json
-{
-  "enabledRules": [
-    "com.codereview.rules.common.java.YourNewRule"
-  ]
-}
-```
-
-完成！下次构建后新规则就会被加载。
+完成！下次构建后新规则就会被自动发现，并出现在 GUI 的"本地设置"对话框中，你可以勾选启用或禁用。
 
 ## AI 自定义审查规则
 
@@ -277,4 +271,17 @@ AI 输出要求：
 - 所有问题必须放在 `<findings>...</findings>` 标签内
 - 每个问题以分号 `;` 结尾
 - 最后一行必须是 `total=N;` 声明问题总数
+
+## 最近更新
+
+### v2.0 - 架构重构 - 图形化设置界面
+
+- ✅ **架构重构**：移除按项目分类管理，改为统一图形化管理所有规则
+- ✅ **GUI 新增三个设置对话框**：
+  - 扫描设置：可视化选择扫描模式和 Diff 粒度
+  - 本地规则设置：勾选启用/禁用单个规则，独立开关本地规则审查
+  - AI 设置：界面化配置所有 AI 参数，无需手动编辑 JSON
+- ✅ **所有设置持久化**：配置保存后重启自动恢复，无需重复设置
+- ✅ **支持独立开关**：AI 审查和本地规则审查可分别启用/禁用，满足不同场景需求
+- ✅ **报告格式优化**：同时输出 HTML（快速查看）和 Markdown（完整存档）两种格式
 
