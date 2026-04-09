@@ -121,14 +121,30 @@ code_review_kotlin_version/
 │       │   │   │   ├── java/            # Java 通用规则
 │       │   │   │   └── android/         # Android 通用规则
 │       │   ├── ai/                      # AI 模块
-│       │   │   └── providers/           # AI 提供商实现
+│       │   │   ├── providers/           # AI 提供商实现
+│       │   │   ├── RuleDoc.kt           # RuleDoc 数据类（规则知识文档）
+│       │   │   ├── AiReviewContext.kt  # AI 审查上下文
+│       │   │   ├── RuleDocLoader.kt    # RuleDoc 加载器（内置 + 用户自定义）
+│       │   │   ├── PromptAssembler.kt  # 分层提示词组装器
+│       │   │   └── AiConfig.kt         # AI 配置
 │       │   ├── gui/                     # Compose 图形界面
 │       │   ├── cli/                     # 命令行入口
 │       │   └── report/                  # 报告生成
 │       └── resources/
-│           ├── ai_prompts/              # AI 提示词模板
+│           ├── ai_rules/                 # AI RuleDoc 规则知识文档
+│           │   ├── system-prompt.md     # System Prompt（固定格式规则）
+│           │   ├── task-diff.md         # Task Prompt（Diff 模式任务说明）
+│           │   ├── task-global.md       # Task Prompt（Global 模式任务说明）
+│           │   ├── common/              # 通用规则
+│           │   │   ├── java/            # Java 通用规则文档
+│           │   │   └── android/         # Android 通用规则文档
+│           ├── ai_prompts/              # 兼容保留：原提示词模板（已迁移）
 │           │   └── common/              # 通用提示词
 │           └── ai_config/               # AI 客户端默认配置
+├── docs/
+│   └── superpowers/
+│       ├── plans/                       # 实施计划
+│       └── specs/                       # 设计规格
 ├── build.gradle.kts          # Gradle 构建配置
 ├── settings.gradle.kts       # Gradle 项目设置
 └── README.md
@@ -275,6 +291,18 @@ AI 输出要求：
 
 ## 最近更新
 
+### v2.1 - AI Prompt 架构升级 - 分层提示词 + RuleDoc 知识体系
+
+- ✅ **Prompt 分层架构**：按职责隔离为 System / Task / RuleDoc / Code 四层
+  - System Prompt：固定输出格式规则，永远不变
+  - Task Prompt：按扫描模式不同（Diff/Global）给出不同任务指导
+  - RuleDoc：每条审查规则独立知识文档，分层清晰
+  - Code Input：待审查代码内容
+- ✅ **RuleDoc 独立存储**：每个规则一个 Markdown 文件，便于维护
+- ✅ **支持用户自定义 RuleDoc**：可在 `~/.code-review/rule-docs/` 添加自定义规则，无需重新编译
+- ✅ **PromptAssembler**：统一组装入口，为未来 RAG 演进预留接口
+- ✅ **向后兼容**：输出协议完全不变，不影响现有解析和报告生成
+
 ### v2.0 - 架构重构 - 图形化设置界面
 
 - ✅ **架构重构**：移除按项目分类管理，改为统一图形化管理所有规则
@@ -286,4 +314,42 @@ AI 输出要求：
 - ✅ **支持独立开关**：AI 审查和本地规则审查可分别启用/禁用，满足不同场景需求
 - ✅ **报告格式优化**：同时输出 HTML（快速查看）和 Markdown（完整存档）两种格式
 - ✅ **支持自定义输出目录**：GUI 中可选择报告保存目录，设置持久化保存
+
+---
+
+## 后续改造计划
+
+本项目采用增量演进方式，当前已完成 **Phase 1**。
+
+### Phase 2 - 标签检索 + Metadata 输出
+
+**目标：** 基于标签进行规则检索，只注入与当前代码相关的规则，缩短提示词长度，减少幻觉。
+
+**参考文件：**
+- 设计文档：`docs/ai_prompt_architecture_design.md`
+- 实现规格：`docs/superpowers/specs/2026-04-09-ai-prompt-architecture-design.md`
+- 实施计划：`docs/superpowers/plans/2026-04-09-ai-prompt-architecture-upgrade.md`
+
+**主要工作：**
+1. 添加 `QueryAnalyzer` 分析代码提取关键词
+2. 基于关键词匹配 RuleDoc 标签，选择相关规则注入
+3. 添加 `FindingMetadata` 数据结构，扩展 AI 发现结果元数据
+4. 报告中展示元数据信息（不影响现有 HTML 展示）
+
+### Phase 3 - RAG 检索增强
+
+**目标：** 基于 embedding 进行语义检索，进一步提升匹配精度。
+
+**主要工作：**
+1. 为每个 RuleDoc 预计算 embedding
+2. 对输入代码计算 embedding
+3. 语义相似度匹配，选择最相关的 RuleDoc
+4. 只注入匹配规则，提示词更短更精准
+
+---
+
+**如何开始后续改造：**
+1. 阅读设计文档：`docs/ai_prompt_architecture_design.md`
+2. 阅读已完成的 Phase 1 实现：`src/main/kotlin/com/codereview/ai/`
+3. 使用 `superpowers:brainstorming` → `superpowers:writing-plans` → `superpowers:subagent-driven-development` 流程进行开发
 
