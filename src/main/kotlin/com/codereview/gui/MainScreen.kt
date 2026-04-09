@@ -17,6 +17,7 @@ import com.codereview.core.DiffGranularity
 import com.codereview.core.ScanMode
 import com.codereview.core.ScanSettings
 import com.codereview.core.ScanSettingsLoader
+import com.codereview.core.AppSettingsLoader
 import com.codereview.gui.AiSettingsDialog
 import com.codereview.gui.ScanSettingsDialog
 import com.codereview.gui.LocalRulesSettingsDialog
@@ -142,10 +143,15 @@ internal fun MainScreen() {
                 progressText = "开始扫描..."
                 resultText = ""
 
+                // Get output directory from settings before starting review
+                val appSettings = AppSettingsLoader.loadSettings()
+                val outputDir = AppSettingsLoader.getEffectiveOutputDirectory(appSettings)
+
                 coroutineScope.launch(Dispatchers.Default) {
                     val result = runReview(
                         selectedDir,
                         scanSettings,
+                        outputDir,
                         onError = { error -> resultText = error },
                         onReviewingChange = { isReviewing = it }
                     )
@@ -155,14 +161,14 @@ internal fun MainScreen() {
                     isReviewing = false
                     progressText = ""
                     resultText = "审查完成，共扫描 ${result.scannedFiles} 个文件，发现 ${result.localFindings.size} 个本地问题，${result.aiFindings.size} 个AI问题\n"
-                    resultText += "报告已保存到输出目录\n"
+                    resultText += "报告已保存到目录:\n$outputDir\n"
                     if (result.aiEnabled && result.aiErrorMessage != null) {
                         resultText += "\nAI 审查失败：${result.aiErrorMessage}\n"
                     }
 
                     // Open HTML report in browser
                     try {
-                        val htmlFile = getOutputFile(result.timestamp, "html")
+                        val htmlFile = getOutputFile(result.timestamp, "html", outputDir.absolutePath)
                         if (htmlFile.exists()) {
                             Desktop.getDesktop().browse(htmlFile.toURI())
                         }
@@ -231,6 +237,7 @@ internal fun MainScreen() {
 private suspend fun runReview(
     projectDir: String,
     scanSettings: com.codereview.core.ScanSettings,
+    outputDir: File,
     onError: (String) -> Unit,
     onReviewingChange: (Boolean) -> Unit
 ): com.codereview.report.ReviewResult? {
@@ -369,7 +376,6 @@ private suspend fun runReview(
         scannedFilePaths = files
     )
 
-    val outputDir = File(System.getProperty("user.home"), "code-review-output")
     outputDir.mkdirs()
 
     val generators = listOf(
@@ -388,7 +394,7 @@ private suspend fun runReview(
 private fun getOutputFile(
     timestamp: String,
     extension: String,
-    outputDir: String = System.getProperty("user.home") + "/code-review-output"
+    outputDir: String = AppSettingsLoader.getEffectiveOutputDirectory(AppSettingsLoader.loadSettings()).absolutePath
 ): File {
     return File(outputDir, "code-review-result-$timestamp.$extension")
 }
