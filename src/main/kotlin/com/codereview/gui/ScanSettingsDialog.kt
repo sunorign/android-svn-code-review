@@ -12,8 +12,13 @@ import com.codereview.core.ScanMode
 import com.codereview.core.ScanSettings
 import com.codereview.core.ScanSettingsLoader
 import com.codereview.core.DiffGranularity
+import com.codereview.core.AppSettings
+import com.codereview.core.AppSettingsLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileSystemView
 
 @Composable
 fun ScanSettingsDialog(
@@ -21,6 +26,9 @@ fun ScanSettingsDialog(
     onSaved: () -> Unit
 ) {
     var currentSettings by remember { mutableStateOf(ScanSettingsLoader.loadSettings()) }
+    val appSettings = remember { AppSettingsLoader.loadSettings() }
+    var currentOutputDirectory by remember { mutableStateOf(appSettings.outputDirectory) }
+    var useDefaultOutput by remember { mutableStateOf(currentOutputDirectory.isNullOrBlank()) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -90,6 +98,53 @@ fun ScanSettingsDialog(
                     }
                 }
 
+                // Output Directory section
+                Text("输出目录:", style = MaterialTheme.typography.labelMedium)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = useDefaultOutput,
+                            onCheckedChange = { checked ->
+                                useDefaultOutput = checked
+                            }
+                        )
+                        Text("使用默认路径 (~/code-review-output)")
+                    }
+
+                    if (!useDefaultOutput) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = currentOutputDirectory ?: "",
+                                onValueChange = { /* read-only */ },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("点击右侧按钮选择目录") },
+                                singleLine = true,
+                                enabled = false
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(onClick = {
+                                val chooser = JFileChooser(FileSystemView.getFileSystemView().homeDirectory)
+                                chooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+                                chooser.dialogTitle = "选择输出目录"
+                                val result = chooser.showOpenDialog(null)
+                                if (result == JFileChooser.APPROVE_OPTION) {
+                                    currentOutputDirectory = chooser.selectedFile.absolutePath
+                                }
+                            }) {
+                                Text("浏览...")
+                            }
+                        }
+                    }
+                }
+
                 // Error message
                 errorMessage?.let { error ->
                     Card(
@@ -117,7 +172,44 @@ fun ScanSettingsDialog(
                         isSaving = true
                         coroutineScope.launch(Dispatchers.IO) {
                             try {
+                                // Validate output directory before saving
+                                if (!useDefaultOutput) {
+                                    val dirPath = currentOutputDirectory
+                                    if (dirPath.isNullOrBlank()) {
+                                        errorMessage = "请选择输出目录，或勾选'使用默认路径'"
+                                        isSaving = false
+                                        return@launch
+                                    }
+                                    val dir = File(dirPath)
+                                    if (!dir.isAbsolute) {
+                                        errorMessage = "请选择绝对路径: $dirPath"
+                                        isSaving = false
+                                        return@launch
+                                    }
+                                    if (!dir.exists()) {
+                                        // Try to create directory if it doesn't exist
+                                        if (!dir.mkdirs()) {
+                                            errorMessage = "无法创建目录: $dirPath，请检查权限"
+                                            isSaving = false
+                                            return@launch
+                                        }
+                                    }
+                                    if (!dir.canWrite()) {
+                                        errorMessage = "目录无写权限: $dirPath，请选择其他目录"
+                                        isSaving = false
+                                        return@launch
+                                    }
+                                }
+
+                                // Save scan settings
                                 ScanSettingsLoader.saveSettings(currentSettings)
+
+                                // Save app settings
+                                val newAppSettings = AppSettings(
+                                    outputDirectory = if (useDefaultOutput) null else currentOutputDirectory
+                                )
+                                AppSettingsLoader.saveSettings(newAppSettings)
+
                                 launch(Dispatchers.Main) {
                                     isSaving = false
                                     onSaved()
