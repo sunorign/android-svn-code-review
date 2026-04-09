@@ -3,11 +3,11 @@ package com.codereview.ai
 import java.io.File
 import java.net.URISyntaxException
 
-internal class RuleDocLoader {
+class RuleDocLoader {
 
     private val SECTION_PATTERN = Regex("^#\\s*(.+)\\s*$")
 
-    internal fun loadAllRuleDocs(): List<RuleDoc> {
+    fun loadAllRuleDocs(): List<RuleDoc> {
         val result = mutableListOf<RuleDoc>()
 
         // Load built-in rule docs from resources

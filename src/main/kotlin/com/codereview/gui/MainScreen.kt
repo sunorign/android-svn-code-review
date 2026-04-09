@@ -12,7 +12,9 @@ import com.codereview.core.Scanner
 import com.codereview.core.Finding
 import com.codereview.ai.AiConfigLoader
 import com.codereview.ai.AiClientFactory
-import com.codereview.ai.PromptLoader
+import com.codereview.ai.RuleDocLoader
+import com.codereview.ai.AiReviewContext
+import com.codereview.ai.DefaultPromptAssembler
 import com.codereview.core.DiffGranularity
 import com.codereview.core.ScanMode
 import com.codereview.core.ScanSettings
@@ -299,10 +301,24 @@ private suspend fun runReview(
 
         if (aiEnabled) {
             val aiClient = AiClientFactory.create(aiConfig)
-            val promptLoader = PromptLoader()
-            val loadedPrompt = promptLoader.getCommonFullReviewPrompt()
-            prompt = loadedPrompt.content
-            promptFiles = loadedPrompt.loadedFiles
+
+            // New layered prompt assembly
+            val ruleDocLoader = RuleDocLoader()
+            val allRuleDocs = ruleDocLoader.loadAllRuleDocs()
+
+            val systemPrompt = RuleDocLoader::class.java.classLoader.getResourceAsStream("ai_rules/system-prompt.md")
+                ?.bufferedReader()?.use { it.readText() }
+                ?: throw IllegalStateException("system-prompt.md not found in resources")
+
+            val taskPrompt = if (scanSettings.scanMode == ScanMode.FULL) {
+                RuleDocLoader::class.java.classLoader.getResourceAsStream("ai_rules/task-global.md")
+                    ?.bufferedReader()?.use { it.readText() }
+            } else {
+                RuleDocLoader::class.java.classLoader.getResourceAsStream("ai_rules/task-diff.md")
+                    ?.bufferedReader()?.use { it.readText() }
+            } ?: throw IllegalStateException("task prompt not found in resources")
+
+            val promptAssembler = DefaultPromptAssembler()
 
             // Take first 10 files for AI review
             val codeContent = files.take(10).joinToString("\n\n---\n\n") { file ->
@@ -314,7 +330,17 @@ private suspend fun runReview(
                 }
             }
 
-            aiResponse = aiClient.review(prompt, codeContent)
+            val context = AiReviewContext(
+                systemPrompt = systemPrompt,
+                taskPrompt = taskPrompt,
+                ruleDocs = allRuleDocs,
+                codeContent = codeContent
+            )
+            val assembledPrompt = promptAssembler.assemble(context)
+            prompt = assembledPrompt
+            promptFiles = allRuleDocs.map { it.sourcePath }
+
+            aiResponse = aiClient.review(assembledPrompt, "")
             if (aiResponse.success) {
                 aiFindings.addAll(aiResponse.findings)
             } else {

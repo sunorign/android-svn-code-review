@@ -1,10 +1,10 @@
 package com.codereview.ai
 
-internal interface PromptAssembler {
+interface PromptAssembler {
     fun assemble(context: AiReviewContext): String
 }
 
-internal class DefaultPromptAssembler : PromptAssembler {
+class DefaultPromptAssembler : PromptAssembler {
 
     override fun assemble(context: AiReviewContext): String {
         return buildString {
