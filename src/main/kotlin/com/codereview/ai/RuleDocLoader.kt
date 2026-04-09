@@ -1,6 +1,7 @@
 package com.codereview.ai
 
 import java.io.File
+import java.net.URISyntaxException
 
 internal class RuleDocLoader {
 
@@ -27,18 +28,15 @@ internal class RuleDocLoader {
         )
 
         for (basePath in commonPaths) {
-            val stream = this::class.java.classLoader.getResource(basePath)
-            if (stream != null) {
-                val dir = File(stream.toURI())
-                if (dir.exists() && dir.isDirectory) {
-                    dir.listFiles()?.filter { it.extension == "md" }?.forEach { file ->
-                        try {
-                            val ruleDoc = parseRuleDoc(file.readText(), file.absolutePath)
-                            result.add(ruleDoc)
-                        } catch (e: Exception) {
-                            println("Warning: Failed to parse built-in RuleDoc ${file.path}: ${e.message}")
-                        }
+            val url = this::class.java.classLoader.getResource(basePath)
+            if (url != null) {
+                try {
+                    val dir = File(url.toURI())
+                    if (dir.exists() && dir.isDirectory) {
+                        result.addAll(parseDirectory(dir, "built-in"))
                     }
+                } catch (e: URISyntaxException) {
+                    println("Warning: Failed to load built-in rules from $basePath: ${e.message}")
                 }
             }
         }
@@ -47,7 +45,6 @@ internal class RuleDocLoader {
     }
 
     private fun loadUserRuleDocs(): List<RuleDoc> {
-        val result = mutableListOf<RuleDoc>()
         val homeDir = System.getProperty("user.home")
         val userDir = File(homeDir, ".code-review/rule-docs")
 
@@ -55,15 +52,19 @@ internal class RuleDocLoader {
             return emptyList()
         }
 
-        userDir.listFiles()?.filter { it.extension == "md" }?.forEach { file ->
+        return parseDirectory(userDir, "user")
+    }
+
+    private fun parseDirectory(dir: File, sourceType: String): List<RuleDoc> {
+        val result = mutableListOf<RuleDoc>()
+        dir.listFiles()?.filter { it.extension == "md" }?.forEach { file ->
             try {
                 val ruleDoc = parseRuleDoc(file.readText(), file.absolutePath)
                 result.add(ruleDoc)
             } catch (e: Exception) {
-                println("Warning: Failed to parse user RuleDoc ${file.path}: ${e.message}")
+                println("Warning: Failed to parse $sourceType RuleDoc ${file.path}: ${e.message}")
             }
-        }
-
+        } ?: return emptyList()
         return result
     }
 

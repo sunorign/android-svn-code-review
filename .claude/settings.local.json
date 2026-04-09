@@ -4,7 +4,13 @@
       "Bash(find E:WorkBakupFilesArchiveFeisuRecentcode_review_kotlin_version -name *.md -o -name *.txt)",
       "Bash(./gradlew.bat compileKotlin)",
       "Bash(./gradlew.bat clean:*)",
-      "Bash(./gradlew.bat build:*)"
+      "Bash(./gradlew.bat build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(./gradlew compileKotlin)",
+      "Bash(ls:*)",
+      "Bash(./gradlew compileKotlin --no-parallel)",
+      "Bash(./gradlew compileKotlin --no-build-cache)"
     ]
   }
 }
