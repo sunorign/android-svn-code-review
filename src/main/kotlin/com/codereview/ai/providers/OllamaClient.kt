@@ -7,8 +7,10 @@ import com.codereview.ai.AiResponse
 import com.codereview.ai.AiFindingParser
 import com.codereview.ai.TestResponse
 import kotlinx.serialization.json.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
@@ -35,8 +37,11 @@ internal class OllamaClient(private val config: AiConfig) : AiClient {
             val mediaType = "application/json".toMediaType()
             val body = requestBody.toString().toRequestBody(mediaType)
 
-            val request = okhttp3.Request.Builder()
-                .url(if (config.apiUrl.endsWith("/")) "${config.apiUrl}api/generate" else if (config.apiUrl.contains("/api/")) config.apiUrl else "${config.apiUrl}/api/generate")
+            val cleanedApiUrl = config.apiUrl.trim()
+            val fullApiUrl = if (cleanedApiUrl.endsWith("/")) "${cleanedApiUrl}api/generate" else if (cleanedApiUrl.contains("/api/")) cleanedApiUrl else "${cleanedApiUrl}/api/generate"
+            val httpUrl = fullApiUrl.toHttpUrl()
+            val request = Request.Builder()
+                .url(httpUrl)
                 .post(body)
                 .build()
 
@@ -108,16 +113,18 @@ internal class OllamaClient(private val config: AiConfig) : AiClient {
             val mediaType = "application/json".toMediaType()
             val body = requestBody.toString().toRequestBody(mediaType)
 
-            val apiUrl = if (config.apiUrl.endsWith("/")) {
-                "${config.apiUrl}api/generate"
-            } else if (config.apiUrl.contains("/api/")) {
-                config.apiUrl
+            val cleanedApiUrl = config.apiUrl.trim()
+            val apiUrl = if (cleanedApiUrl.endsWith("/")) {
+                "${cleanedApiUrl}api/generate"
+            } else if (cleanedApiUrl.contains("/api/")) {
+                cleanedApiUrl
             } else {
-                "${config.apiUrl}/api/generate"
+                "${cleanedApiUrl}/api/generate"
             }
 
-            val request = okhttp3.Request.Builder()
-                .url(apiUrl)
+            val httpUrl = apiUrl.toHttpUrl()
+            val request = Request.Builder()
+                .url(httpUrl)
                 .post(body)
                 .build()
 

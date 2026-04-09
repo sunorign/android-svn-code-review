@@ -7,8 +7,10 @@ import com.codereview.ai.AiResponse
 import com.codereview.ai.AiFindingParser
 import com.codereview.ai.TestResponse
 import kotlinx.serialization.json.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
@@ -38,7 +40,7 @@ internal class ClaudeClient(private val config: AiConfig) : AiClient {
             val body = requestBody.toString().toRequestBody(mediaType)
 
             val request = okhttp3.Request.Builder()
-                .url(config.apiUrl)
+                .url(config.apiUrl.trim().toHttpUrl())
                 .addHeader("x-api-key", config.apiKey)
                 .addHeader("anthropic-version", "2023-06-01")
                 .post(body)
@@ -121,7 +123,7 @@ internal class ClaudeClient(private val config: AiConfig) : AiClient {
             val body = requestBody.toString().toRequestBody(mediaType)
 
             val request = okhttp3.Request.Builder()
-                .url(config.apiUrl)
+                .url(config.apiUrl.trim().toHttpUrl())
                 .addHeader("x-api-key", config.apiKey)
                 .addHeader("anthropic-version", "2023-06-01")
                 .post(body)

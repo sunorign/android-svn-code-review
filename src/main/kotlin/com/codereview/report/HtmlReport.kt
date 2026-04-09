@@ -121,6 +121,7 @@ internal class HtmlReport : ReportGenerator {
 <th>位置</th>
 <th>说明</th>
 <th>修复建议</th>
+<th>规则</th>
 </tr>
 </thead>
 <tbody>
@@ -137,6 +138,7 @@ internal class HtmlReport : ReportGenerator {
                         "WARNING" -> "WARNING"
                         else -> finding.priority
                     }
+                    val ruleName = finding.metadata.ruleName
                     append("""
 <tr class="$severityClass">
 <td>$displayPriority</td>
@@ -144,6 +146,7 @@ internal class HtmlReport : ReportGenerator {
 <td><code>${finding.location.htmlEscape()}</code></td>
 <td>${finding.description.htmlEscape()}</td>
 <td>${finding.suggestion.htmlEscape()}</td>
+<td>${if (ruleName != null) ruleName.htmlEscape() else "-"}</td>
 </tr>
                     """.trimIndent())
                 }

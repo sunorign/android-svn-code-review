@@ -7,8 +7,10 @@ import com.codereview.ai.AiResponse
 import com.codereview.ai.AiFindingParser
 import com.codereview.ai.TestResponse
 import kotlinx.serialization.json.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
@@ -37,8 +39,17 @@ internal class OpenRouterClient(private val config: AiConfig) : AiClient {
             val mediaType = "application/json".toMediaType()
             val body = requestBody.toString().toRequestBody(mediaType)
 
+            // Use HttpUrl to properly parse the URL
+            val cleanedUrl = config.apiUrl.trim()
+            val debugInfo = buildString {
+                appendLine("URL: '$cleanedUrl'")
+                appendLine("URL length: ${cleanedUrl.length}")
+                appendLine("Char codes: ${cleanedUrl.map{ it.code }.joinToString(", ")}")
+            }
+            val httpUrl = cleanedUrl.toHttpUrl()
+
             val request = okhttp3.Request.Builder()
-                .url(config.apiUrl)
+                .url(httpUrl)
                 .addHeader("Authorization", "Bearer ${config.apiKey}")
                 .addHeader("HTTP-Referer", "https://code-review.local")
                 .addHeader("X-Title", "Code Review")
@@ -49,23 +60,30 @@ internal class OpenRouterClient(private val config: AiConfig) : AiClient {
             val responseBody = response.body?.string() ?: return AiResponse(
                 success = false,
                 findings = emptyList(),
-                errorMessage = "Empty response from OpenRouter"
+                errorMessage = "Empty response from OpenRouter\n$debugInfo"
             )
 
             if (!response.isSuccessful) {
                 return AiResponse(
                     success = false,
                     findings = emptyList(),
-                    errorMessage = "OpenRouter API error: ${response.code} $responseBody"
+                    errorMessage = "OpenRouter API error: ${response.code} $responseBody\n$debugInfo"
                 )
             }
 
             parseOpenRouterResponse(responseBody)
         } catch (e: Exception) {
+            val cleanedUrl = config.apiUrl.trim()
+            val debugInfo = buildString {
+                appendLine("${e.message}")
+                appendLine("URL: '$cleanedUrl'")
+                appendLine("URL length: ${cleanedUrl.length}")
+                appendLine("Char codes: ${cleanedUrl.map{ it.code }.joinToString(", ")}")
+            }
             AiResponse(
                 success = false,
                 findings = emptyList(),
-                errorMessage = e.message
+                errorMessage = debugInfo
             )
         }
     }
@@ -123,8 +141,12 @@ internal class OpenRouterClient(private val config: AiConfig) : AiClient {
             val mediaType = "application/json".toMediaType()
             val body = requestBody.toString().toRequestBody(mediaType)
 
+            // Use HttpUrl to properly parse the URL
+            val cleanedUrl = config.apiUrl.trim()
+            val httpUrl = cleanedUrl.toHttpUrl()
+
             val request = okhttp3.Request.Builder()
-                .url(config.apiUrl)
+                .url(httpUrl)
                 .addHeader("Authorization", "Bearer ${config.apiKey}")
                 .addHeader("HTTP-Referer", "https://code-review.local")
                 .addHeader("X-Title", "Code Review")
@@ -186,10 +208,17 @@ internal class OpenRouterClient(private val config: AiConfig) : AiClient {
                 rawResponse = cleanedRawResponse
             )
         } catch (e: Exception) {
+            val cleanedUrl = config.apiUrl.trim()
+            val debugInfo = buildString {
+                appendLine("${e.message}")
+                appendLine("URL: '$cleanedUrl'")
+                appendLine("URL length: ${cleanedUrl.length}")
+                appendLine("Char codes: ${cleanedUrl.map{ it.code }.joinToString(", ")}")
+            }
             TestResponse(
                 success = false,
                 responseText = "",
-                errorMessage = e.message,
+                errorMessage = debugInfo,
                 rawResponse = null
             )
         }

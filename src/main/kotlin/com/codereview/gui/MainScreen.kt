@@ -12,9 +12,13 @@ import com.codereview.core.Scanner
 import com.codereview.core.Finding
 import com.codereview.ai.AiConfigLoader
 import com.codereview.ai.AiClientFactory
+import com.codereview.ai.EmbeddingClient
+import com.codereview.ai.RetrievalMode
 import com.codereview.ai.RuleDocLoader
+import com.codereview.ai.SemanticMatcher
 import com.codereview.ai.AiReviewContext
 import com.codereview.ai.DefaultPromptAssembler
+import com.codereview.ai.OllamaEmbeddingClient
 import com.codereview.core.DiffGranularity
 import com.codereview.core.ScanMode
 import com.codereview.core.ScanSettings
@@ -48,6 +52,7 @@ internal fun MainScreen() {
     var showScanSettingsDialog by remember { mutableStateOf(false) }
     var showLocalRulesSettingsDialog by remember { mutableStateOf(false) }
     var scanSettings by remember { mutableStateOf(ScanSettingsLoader.loadSettings()) }
+    var enableTagMatching by remember { mutableStateOf(true) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -154,6 +159,7 @@ internal fun MainScreen() {
                         selectedDir,
                         scanSettings,
                         outputDir,
+                        enableTagMatching,
                         onError = { error -> resultText = error },
                         onReviewingChange = { isReviewing = it }
                     )
@@ -212,7 +218,8 @@ internal fun MainScreen() {
     if (showAiSettingsDialog) {
         AiSettingsDialog(
             onDismiss = { showAiSettingsDialog = false },
-            onSaved = { showAiSettingsDialog = false }
+            onSaved = { showAiSettingsDialog = false },
+            onSettingsChanged = { enableTagMatching = it }
         )
     }
 
@@ -240,6 +247,7 @@ private suspend fun runReview(
     projectDir: String,
     scanSettings: com.codereview.core.ScanSettings,
     outputDir: File,
+    enableTagMatching: Boolean,
     onError: (String) -> Unit,
     onReviewingChange: (Boolean) -> Unit
 ): com.codereview.report.ReviewResult? {
@@ -319,6 +327,16 @@ private suspend fun runReview(
             } ?: throw IllegalStateException("task prompt not found in resources")
 
             val promptAssembler = DefaultPromptAssembler()
+            promptAssembler.initEmbeddingClient(aiConfig)
+
+            // Precompute embeddings for all rule docs if semantic retrieval is enabled
+            if (aiConfig.retrievalMode == RetrievalMode.SEMANTIC) {
+                val embeddingClient = OllamaEmbeddingClient(aiConfig)
+                val semanticMatcher = SemanticMatcher()
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    semanticMatcher.precomputeEmbeddings(allRuleDocs, embeddingClient)
+                }
+            }
 
             // Take first 10 files for AI review
             val codeContent = files.take(10).joinToString("\n\n---\n\n") { file ->
@@ -336,7 +354,7 @@ private suspend fun runReview(
                 ruleDocs = allRuleDocs,
                 codeContent = codeContent
             )
-            val assembledPrompt = promptAssembler.assemble(context)
+            val assembledPrompt = promptAssembler.assemble(context, aiConfig.retrievalMode, aiConfig.semanticTopN)
             prompt = assembledPrompt
             promptFiles = allRuleDocs.map { it.sourcePath }
 

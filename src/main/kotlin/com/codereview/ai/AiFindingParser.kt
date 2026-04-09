@@ -160,6 +160,16 @@ internal object AiFindingParser {
             it.key.contains("always_display")
         }?.value?.toBooleanStrictOrNull() ?: map["always_display"]?.toBooleanStrictOrNull() ?: false
 
+        // Extract metadata - rule_name
+        val ruleName = map.entries.find {
+            it.key.contains("rule_name") || it.key.contains("rulename")
+        }?.value
+
+        // Build metadata
+        val metadata = FindingMetadata(
+            ruleName = ruleName
+        )
+
         debugLog.add("[AiFindingParser]   Successfully parsed: location=$location, lineStart=$lineStart")
         return AiFinding(
             priority = priority,
@@ -167,7 +177,8 @@ internal object AiFindingParser {
             location = location,
             description = description,
             suggestion = suggestion,
-            alwaysDisplay = alwaysDisplay
+            alwaysDisplay = alwaysDisplay,
+            metadata = metadata
         )
     }
 

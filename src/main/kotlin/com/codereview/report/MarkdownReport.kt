@@ -173,6 +173,21 @@ internal class MarkdownReport : ReportGenerator {
                 appendLine()
             }
 
+            if (result.aiFindings.isNotEmpty()) {
+                appendLine("[AI 发现问题]")
+                appendLine()
+                result.aiFindings.forEachIndexed { index, finding ->
+                    appendLine("${index + 1}. **${finding.priority.uppercase()}** ${finding.issueType}")
+                    appendLine("- 位置: `${finding.location}`")
+                    appendLine("- 说明: ${finding.description}")
+                    appendLine("- 建议: ${finding.suggestion}")
+                    if (!finding.metadata.ruleName.isNullOrBlank()) {
+                        appendLine("- 规则: ${finding.metadata.ruleName}")
+                    }
+                    appendLine()
+                }
+            }
+
             if (result.localFindings.isEmpty() && result.aiFindings.isEmpty()) {
                 appendLine("[检查结果]")
                 appendLine()

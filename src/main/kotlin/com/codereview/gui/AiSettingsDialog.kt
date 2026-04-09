@@ -50,7 +50,8 @@ val PROVIDER_PRESETS = listOf(
 @Composable
 fun AiSettingsDialog(
     onDismiss: () -> Unit,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    onSettingsChanged: (enableTagMatching: Boolean) -> Unit
 ) {
     var currentConfig by remember { mutableStateOf(AiConfigLoader.loadConfig()) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -58,7 +59,13 @@ fun AiSettingsDialog(
     var isTesting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var testResult by remember { mutableStateOf<TestResponse?>(null) }
+    var enableTagMatching by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Notify parent when setting changes
+    LaunchedEffect(enableTagMatching) {
+        onSettingsChanged(enableTagMatching)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -181,6 +188,80 @@ fun AiSettingsDialog(
                     Text("开启 AI 审查（关闭后不执行 AI 审查，节省调用费用）", style = MaterialTheme.typography.bodyMedium)
                 }
 
+                // Tag matching toggle (for backward compatibility)
+                Text("标签检索:", style = MaterialTheme.typography.labelMedium)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = enableTagMatching,
+                        onCheckedChange = {
+                            enableTagMatching = it
+                        }
+                    )
+                    Text("启用标签检索（只注入相关规则，缩短提示词长度，减少幻觉）", style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Retrieval Mode selection
+                Text("规则检索模式:", style = MaterialTheme.typography.labelMedium)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    com.codereview.ai.RetrievalMode.values().forEach { mode ->
+                        val modeLabel = when (mode) {
+                            com.codereview.ai.RetrievalMode.NONE -> "不启用检索（注入所有规则）"
+                            com.codereview.ai.RetrievalMode.TAG_MATCHING -> "标签匹配（关键词匹配，默认）"
+                            com.codereview.ai.RetrievalMode.SEMANTIC -> "语义检索（RAG，需要 Ollama）"
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            RadioButton(
+                                selected = currentConfig.retrievalMode == mode,
+                                onClick = {
+                                    currentConfig = currentConfig.copy(retrievalMode = mode)
+                                }
+                            )
+                            Text(modeLabel)
+                        }
+                    }
+                }
+
+                // Warning if semantic selected but not Ollama provider
+                if (currentConfig.retrievalMode == com.codereview.ai.RetrievalMode.SEMANTIC && currentConfig.provider != "ollama") {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "⚠ 语义检索目前仅支持 Ollama 提供商，使用其他提供商将回退到标签匹配",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Top-N for semantic
+                Text("语义检索返回规则数:", style = MaterialTheme.typography.labelMedium)
+                OutlinedTextField(
+                    value = currentConfig.semanticTopN.takeIf { it > 0 }?.toString() ?: "",
+                    onValueChange = {
+                        it.toIntOrNull()?.let { n ->
+                            currentConfig = currentConfig.copy(semanticTopN = n)
+                        }
+                    },
+                    placeholder = { Text("返回最相关的 N 条规则，默认 10") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
                 // Error message
                 errorMessage?.let { error ->
                     Card(
@@ -283,7 +364,7 @@ fun AiSettingsDialog(
                             }
                         }
                     },
-                    enabled = !isTesting && !isSaving && currentConfig.aiEnabled && currentConfig.apiKey.isNotBlank() && currentConfig.apiUrl.isNotBlank() && currentConfig.model.isNotBlank() && currentConfig.maxTokens > 0 && currentConfig.timeoutSeconds > 0
+                    enabled = !isTesting && !isSaving && currentConfig.aiEnabled && currentConfig.apiKey.isNotBlank() && currentConfig.apiUrl.isNotBlank() && currentConfig.model.isNotBlank() && currentConfig.maxTokens > 0 && currentConfig.timeoutSeconds > 0 && currentConfig.semanticTopN > 0
                 ) {
                     Text(if (isTesting) "测试中..." else "测试")
                 }
@@ -312,7 +393,8 @@ fun AiSettingsDialog(
          currentConfig.apiUrl.isNotBlank() &&
          currentConfig.model.isNotBlank() &&
          currentConfig.maxTokens > 0 &&
-         currentConfig.timeoutSeconds > 0))
+         currentConfig.timeoutSeconds > 0 &&
+         currentConfig.semanticTopN > 0))
                 ) {
                     Text(if (isSaving) "保存中..." else "保存")
                 }

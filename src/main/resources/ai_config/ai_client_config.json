@@ -6,5 +6,7 @@
   "maxTokens": 4096,
   "timeoutSeconds": 60,
   "aiEnabled": true,
-  "localEnabled": true
+  "localEnabled": true,
+  "retrievalMode": "TAG_MATCHING",
+  "semanticTopN": 10
 }

@@ -1,7 +1,11 @@
 package com.codereview.ai
 
 import java.io.File
-import java.net.URISyntaxException
+import java.net.URI
+import java.net.URL
+import java.net.URLConnection
+import java.util.jar.JarEntry
+import java.util.jar.JarInputStream
 
 class RuleDocLoader {
 
@@ -31,11 +35,19 @@ class RuleDocLoader {
             val url = this::class.java.classLoader.getResource(basePath)
             if (url != null) {
                 try {
+                    // First try: file system access (development mode)
                     val dir = File(url.toURI())
                     if (dir.exists() && dir.isDirectory) {
                         result.addAll(parseDirectory(dir, "built-in"))
                     }
-                } catch (e: URISyntaxException) {
+                } catch (e: IllegalArgumentException) {
+                    // URI is not hierarchical - probably inside JAR, use JarInputStream
+                    try {
+                        result.addAll(loadFromJar(url, basePath, "built-in"))
+                    } catch (e2: Exception) {
+                        println("Warning: Failed to load built-in rules from $basePath: ${e2.message}")
+                    }
+                } catch (e: Exception) {
                     println("Warning: Failed to load built-in rules from $basePath: ${e.message}")
                 }
             }
@@ -53,6 +65,46 @@ class RuleDocLoader {
         }
 
         return parseDirectory(userDir, "user")
+    }
+
+    private fun loadFromJar(url: URL, basePath: String, sourceType: String): List<RuleDoc> {
+        val result = mutableListOf<RuleDoc>()
+        try {
+            val connection = url.openConnection() as java.net.JarURLConnection
+            val jarFile = connection.jarFile
+            jarFile.entries().iterator().forEach { entry ->
+                if (entry.name.startsWith(basePath) && entry.name.endsWith(".md")) {
+                    try {
+                        val content = jarFile.getInputStream(entry).bufferedReader().use { it.readText() }
+                        val ruleDoc = parseRuleDoc(content, entry.name)
+                        result.add(ruleDoc)
+                    } catch (e: Exception) {
+                        println("Warning: Failed to parse $sourceType RuleDoc ${entry.name}: ${e.message}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Fallback: try another approach - get the jar file from the URL
+            try {
+                val jarUrlStr = url.toString().substringBefore("!")
+                val jarFile = java.util.jar.JarFile(java.io.File(java.net.URI(jarUrlStr)))
+                var entry: java.util.jar.JarEntry? = null
+                jarFile.entries().iterator().forEach { current ->
+                    if (current.name.startsWith(basePath) && current.name.endsWith(".md")) {
+                        try {
+                            val content = jarFile.getInputStream(current).bufferedReader().use { it.readText() }
+                            val ruleDoc = parseRuleDoc(content, current.name)
+                            result.add(ruleDoc)
+                        } catch (e2: Exception) {
+                            println("Warning: Failed to parse $sourceType RuleDoc ${current.name}: ${e2.message}")
+                        }
+                    }
+                }
+            } catch (e2: Exception) {
+                println("Warning: Failed to load built-in rules from JAR: ${e2.message}")
+            }
+        }
+        return result
     }
 
     private fun parseDirectory(dir: File, sourceType: String): List<RuleDoc> {
