@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class AndroidViewHolderPatternRule : BaseRule() {
     override val name: String get() = "Android-ViewHolderPattern"
     override val description: String get() = "检查 ViewHolder 模式的正确使用"
+    override val group: RuleGroup get() = RuleGroup.ANDROID_COMMON
 
     override fun checkDiff(fileDiff: FileDiff, change: DiffChange): List<Finding> {
         val findings = mutableListOf<Finding>()

@@ -36,7 +36,23 @@ internal object LocalRuleSettingsLoader {
         }
 
         return try {
-            json.decodeFromString<LocalRuleSettings>(settingsFile.readText())
+            val loaded = json.decodeFromString<LocalRuleSettings>(settingsFile.readText())
+            // Merge with newly discovered rules to pick up any changes in grouping or new rules
+            val allDiscovered = discoverAllRules().toMutableList()
+            // Keep existing enabled states for rules we already have
+            val merged = allDiscovered.map { discovered ->
+                val existing = loaded.rules.find { it.className == discovered.className }
+                // Use existing enabled state, but update group name from discovery
+                existing?.copy(
+                    groupName = discovered.groupName,
+                    displayName = discovered.displayName,
+                    description = discovered.description
+                ) ?: discovered
+            }
+            val result = loaded.copy(rules = merged)
+            // Save merged result
+            saveSettings(result)
+            result
         } catch (e: Exception) {
             // If corrupted, create default
             val defaultSettings = createDefaultSettings()
@@ -61,49 +77,37 @@ internal object LocalRuleSettingsLoader {
     fun discoverAllRules(): List<RuleState> {
         val rules = mutableListOf<RuleState>()
 
-        // Add common rules
-        val commonRules = listOf(
-            "com.codereview.rules.common.java.JavaDebugLoggingRule" to RuleInfo("Java-DebugLogging", "检测调试日志输出 (System.out.println, Log.d/Log.v)"),
-            "com.codereview.rules.common.java.JavaHardcodedSecretsRule" to RuleInfo("Java-HardcodedSecrets", "检测硬编码密码、密钥和API Key"),
-            "com.codereview.rules.common.java.JavaUnclosedResourcesRule" to RuleInfo("Java-UnclosedResources", "检查未关闭的 Cursor、Stream、Connection 资源"),
-            "com.codereview.rules.common.java.JavaNpeRiskRule" to RuleInfo("Java-NPERisk", "识别多层调用可能导致的空指针异常"),
-            "com.codereview.rules.common.java.JavaMemoryLeakRule" to RuleInfo("Java-MemoryLeak", "检测可能导致内存泄漏的非静态内部类"),
-            "com.codereview.rules.common.android.AndroidHardcodedUrlsRule" to RuleInfo("Android-HardcodedUrls", "检查硬编码IP地址或URL"),
-            "com.codereview.rules.common.android.AndroidViewHolderPatternRule" to RuleInfo("Android-ViewHolderPattern", "验证是否正确使用ViewHolder模式"),
-            "com.codereview.rules.common.android.AndroidBinaryFilesRule" to RuleInfo("Android-BinaryFiles", "阻止二进制文件 (.apk/.dex/.aar/.so) 提交")
+        // All known rule classes - we explicitly list them since they're all known at compile time
+        val allRuleClassNames = listOf(
+            "com.codereview.rules.common.java.JavaDebugLoggingRule",
+            "com.codereview.rules.common.java.JavaHardcodedSecretsRule",
+            "com.codereview.rules.common.java.JavaUnclosedResourcesRule",
+            "com.codereview.rules.common.java.JavaNpeRiskRule",
+            "com.codereview.rules.common.java.JavaMemoryLeakRule",
+            "com.codereview.rules.common.android.AndroidHardcodedUrlsRule",
+            "com.codereview.rules.common.android.AndroidViewHolderPatternRule",
+            "com.codereview.rules.common.android.AndroidBinaryFilesRule"
         )
-        commonRules.forEach { (className, info) ->
-            rules.add(RuleState(className, info.displayName, info.description, enabled = true, groupName = "通用规则"))
-        }
 
-        // Check for project-specific rules from each project's rules.json
-        val projects = listOf("payment", "cashier", "mis", "mtms")
-        for (project in projects) {
-            val configPath = "/com/codereview/rules/projects/$project/rules.json"
-            val stream = RuleLoader::class.java.getResourceAsStream(configPath)
-            if (stream != null) {
-                try {
-                    val configJson = stream.bufferedReader().use { it.readText() }
-                    val config = json.decodeFromString<RuleConfig>(configJson)
-                    config.enabledRules.forEach { className ->
-                        // Check if already added (common rules can be in project config)
-                        if (rules.none { it.className == className }) {
-                            val displayName = className.substringAfterLast(".")
-                            val description = "项目特定规则: $className"
-                            rules.add(RuleState(className, displayName, description, enabled = true, groupName = "项目规则 - $project"))
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Ignore, skip this project
-                }
+        for (className in allRuleClassNames) {
+            try {
+                val clazz = Class.forName(className)
+                val rule = clazz.getDeclaredConstructor().newInstance() as com.codereview.core.BaseRule
+                val groupName = rule.group.displayName
+                rules.add(
+                    RuleState(
+                        className = className,
+                        displayName = rule.name,
+                        description = rule.description,
+                        enabled = true,
+                        groupName = groupName
+                    )
+                )
+            } catch (e: Exception) {
+                println("Warning: Failed to discover rule $className: ${e.message}")
             }
         }
 
         return rules
     }
-
-    private data class RuleInfo(
-        val displayName: String,
-        val description: String
-    )
 }

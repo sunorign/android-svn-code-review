@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class JavaHardcodedSecretsRule : BaseRule() {
     override val name: String get() = "Java-HardcodedSecrets"
     override val description: String get() = "检测硬编码的密码、密钥、API Key等敏感信息"
+    override val group: RuleGroup get() = RuleGroup.JAVA_COMMON
 
     private val patterns = listOf(
         Regex("password\\s*=\\s*[\"'][^\"']+[\"']", RegexOption.IGNORE_CASE),

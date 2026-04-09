@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class AndroidHardcodedUrlsRule : BaseRule() {
     override val name: String get() = "Android-HardcodedUrls"
     override val description: String get() = "检查硬编码的IP地址或URL"
+    override val group: RuleGroup get() = RuleGroup.ANDROID_COMMON
 
     private val patterns = listOf(
         Regex("http://\\d+\\.\\d+\\.\\d+\\.\\d+"),

@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class JavaDebugLoggingRule : BaseRule() {
     override val name: String get() = "Java-DebugLogging"
     override val description: String get() = "检查调试日志代码(System.out.println/Log.d)"
+    override val group: RuleGroup get() = RuleGroup.JAVA_COMMON
 
     private val patterns = listOf(
         Regex("System\\.out\\.println"),

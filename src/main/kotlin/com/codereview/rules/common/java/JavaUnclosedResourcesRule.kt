@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class JavaUnclosedResourcesRule : BaseRule() {
     override val name: String get() = "Java-UnclosedResources"
     override val description: String get() = "检查未关闭的资源(Cursor/Stream/Connection)"
+    override val group: RuleGroup get() = RuleGroup.JAVA_COMMON
 
     private val resourceTypes = listOf(
         "Cursor", "Stream", "InputStream", "OutputStream", "Reader", "Writer",

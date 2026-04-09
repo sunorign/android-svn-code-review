@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class JavaMemoryLeakRule : BaseRule() {
     override val name: String get() = "Java-MemoryLeak"
     override val description: String get() = "检测非静态内部类可能造成的内存泄漏"
+    override val group: RuleGroup get() = RuleGroup.JAVA_COMMON
 
     override fun checkDiff(fileDiff: FileDiff, change: DiffChange): List<Finding> {
         val findings = mutableListOf<Finding>()

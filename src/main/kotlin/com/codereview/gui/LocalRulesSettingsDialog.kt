@@ -49,16 +49,16 @@ internal fun LocalRulesSettingsDialog(
     }
     val expandedGroups = remember {
         mutableStateMapOf<String, Boolean>().apply {
-            // All groups expanded by default
+            // All groups collapsed by default
             ruleStates.values.map { it.groupName }.distinct().forEach { group ->
-                this[group] = true
+                this[group] = false
             }
         }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("本地规则设置") },
+        title = { Text("本地审查设置") },
         text = {
             Column(
                 modifier = Modifier
@@ -87,6 +87,7 @@ internal fun LocalRulesSettingsDialog(
                     groupedRules.forEach { (groupName, rules) ->
                         val expanded = expandedGroups[groupName] ?: true
                         val enabledCount = rules.count { it.enabled }
+                        val allEnabled = enabledCount == rules.size
                         val totalCount = rules.size
 
                         // Group header with expand/collapse
@@ -103,7 +104,7 @@ internal fun LocalRulesSettingsDialog(
                                         .clickable {
                                             expandedGroups[groupName] = !expanded
                                         }
-                                        .padding(12.dp)
+                                        .padding(start = 12.dp, top = 12.dp, end = 12.dp)
                                 ) {
                                     Text(
                                         "$groupName ($enabledCount/$totalCount 启用)",
@@ -114,6 +115,38 @@ internal fun LocalRulesSettingsDialog(
                                         if (expanded) "▼" else "▶",
                                         style = MaterialTheme.typography.titleMedium
                                     )
+                                }
+
+                                // Select all / none buttons
+                                if (expanded && localEnabled) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.End,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp)
+                                    ) {
+                                        TextButton(
+                                            onClick = {
+                                                rules.forEach { rule ->
+                                                    ruleStates[rule.className] = rule.copy(enabled = true)
+                                                }
+                                            },
+                                            enabled = !allEnabled && localEnabled
+                                        ) {
+                                            Text("全选")
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        TextButton(
+                                            onClick = {
+                                                rules.forEach { rule ->
+                                                    ruleStates[rule.className] = rule.copy(enabled = false)
+                                                }
+                                            },
+                                            enabled = enabledCount > 0 && localEnabled
+                                        ) {
+                                            Text("取消全选")
+                                        }
+                                    }
                                 }
 
                                 if (expanded) {
@@ -159,23 +192,16 @@ internal fun LocalRulesSettingsDialog(
             }
         },
         confirmButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text("取消")
-                }
-                TextButton(onClick = {
-                    val updatedSettings = LocalRuleSettings(
-                        localEnabled = localEnabled,
-                        rules = ruleStates.values.toList()
-                    )
-                    LocalRuleSettingsLoader.saveSettings(updatedSettings)
-                    onSaved()
-                    onDismiss()
-                }) {
-                    Text("保存")
-                }
+            TextButton(onClick = {
+                val updatedSettings = LocalRuleSettings(
+                    localEnabled = localEnabled,
+                    rules = ruleStates.values.toList()
+                )
+                LocalRuleSettingsLoader.saveSettings(updatedSettings)
+                onSaved()
+                onDismiss()
+            }) {
+                Text("保存")
             }
         },
         dismissButton = {

@@ -68,7 +68,7 @@ internal fun MainScreen() {
                     Text("扫描设置")
                 }
                 OutlinedButton(onClick = { showLocalRulesSettingsDialog = true }) {
-                    Text("本地规则设置")
+                    Text("本地设置")
                 }
                 OutlinedButton(onClick = { showAiSettingsDialog = true }) {
                     Text("AI 设置")

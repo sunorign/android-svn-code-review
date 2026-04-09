@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class AndroidBinaryFilesRule : BaseRule() {
     override val name: String get() = "Android-BinaryFiles"
     override val description: String get() = "阻止提交apk、dex等二进制文件"
+    override val group: RuleGroup get() = RuleGroup.ANDROID_COMMON
 
     private val binaryExtensions = setOf(".apk", ".dex", ".aar", ".so")
 

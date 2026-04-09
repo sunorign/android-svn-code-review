@@ -1,8 +1,16 @@
 package com.codereview.core
 
+internal enum class RuleGroup(
+    val displayName: String
+) {
+    JAVA_COMMON("Java 通用规则"),
+    ANDROID_COMMON("Android 通用规则")
+}
+
 internal abstract class BaseRule {
     abstract val name: String
     abstract val description: String
+    abstract val group: RuleGroup
     open val alwaysDisplay: Boolean get() = false
 
     abstract fun checkDiff(fileDiff: FileDiff, change: DiffChange): List<Finding>

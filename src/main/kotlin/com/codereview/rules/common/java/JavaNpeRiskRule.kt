@@ -5,10 +5,12 @@ import com.codereview.core.FileDiff
 import com.codereview.core.Finding
 import com.codereview.core.DiffChange
 import com.codereview.core.Severity
+import com.codereview.core.RuleGroup
 
 internal class JavaNpeRiskRule : BaseRule() {
     override val name: String get() = "Java-NPERisk"
     override val description: String get() = "识别可能的空指针异常风险"
+    override val group: RuleGroup get() = RuleGroup.JAVA_COMMON
 
     private val patterns = listOf(
         Regex("\\w+\\.\\w+\\(\\)"),
