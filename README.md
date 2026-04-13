@@ -1,6 +1,6 @@
 # Code Review - Kotlin Version
 
-[English](README.md) | [简体中文](README.md.zh-CN)
+[English](README.md) | [简体中文](README.zh-CN.md)
 
 > Automated Code Review Tool for Android Clients - Kotlin + Compose Multiplatform Version
 
