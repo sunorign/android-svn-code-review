@@ -306,6 +306,10 @@ class MyClass {
 | **OpenRouter**       | 通过 OpenRouter 访问多种模型（GPT-4、Claude、Minimax、通义千问等） | API Key                               |
 | **Ollama**           | 本地部署开源大模型（Llama 2、Mistral 等）                    | 不需要 API Key，只需要本地运行 Ollama |
 
+
+```
+
+
 ## 项目结构
 
 ```
